@@ -117,7 +117,7 @@ elif [[ "$PLATFORM" == "linux" ]]; then
   ./linuxdeploy-plugin-qt-"$LINUX_ARCH".AppImage --appdir appimage_dir
   rm ./linuxdeploy-plugin-qt-"$LINUX_ARCH".AppImage
   ./linuxdeploy-"$LINUX_ARCH".AppImage --appdir appimage_dir --plugin checkrt --output appimage --desktop-file ../linux/PCBioUnlock.desktop
-  mv PC_Bio_Unlock*.AppImage PCBioUnlock.AppImage
+  mv ./*.AppImage PCBioUnlock.AppImage
   chmod +x PCBioUnlock.AppImage
 elif [[ "$PLATFORM" == "mac" ]]; then
   "$QT_BASE_DIR/macos/bin/macdeployqt" desktop/pcbu_desktop.app -qmldir=../../desktop/qml
