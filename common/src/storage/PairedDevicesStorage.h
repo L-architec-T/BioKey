@@ -22,6 +22,7 @@ struct PairedDevice {
   uint16_t udpManualPort{};
   std::string bluetoothAddress{};
   std::string cloudToken{};
+  std::string macroStepsJson{};
 };
 
 class PairedDevicesStorage {
@@ -31,6 +32,7 @@ public:
 
   static void AddDevice(const PairedDevice &device);
   static void RemoveDevice(const std::string &id);
+  static void SetMacroSteps(const std::string &id, const std::string &macroStepsJson);
 
   static std::vector<PairedDevice> GetDevices();
   static void SaveDevices(const std::vector<PairedDevice> &devices);
@@ -44,4 +46,4 @@ private:
   static constexpr std::string_view DEVICES_FILE_NAME = "paired_devices.json";
 };
 
-#endif // PCBU_DESKTOP_PAIREDDEVICESSTORAGE_H
+#endif

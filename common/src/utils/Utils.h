@@ -13,4 +13,4 @@ private:
   Utils() = default;
 };
 
-#endif // PCBU_DESKTOP_UTILS_H
+#endif

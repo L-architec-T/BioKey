@@ -17,8 +17,9 @@ constexpr uint16_t PACKET_ID_PAIR_RESPONSE = 0x51;
 constexpr uint16_t PACKET_ID_DEVICE_ID = 0xB0;
 constexpr uint16_t PACKET_ID_UNLOCK_REQUEST = 0xB1;
 constexpr uint16_t PACKET_ID_UNLOCK_RESPONSE = 0xB2;
+constexpr uint16_t PACKET_ID_LOCK_REQUEST = 0xB3;
 
-struct PacketPairInit { // From phone
+struct PacketPairInit {
   std::string protoVersion{};
   std::string deviceUUID{};
   std::string deviceName{};
@@ -50,7 +51,7 @@ struct PacketPairInit { // From phone
   }
 };
 
-struct PacketPairResponseData { // From PC
+struct PacketPairResponseData {
   PairingMethod pairingMethod{};
   std::string deviceId{};
   std::string deviceName{};
@@ -72,7 +73,7 @@ struct PacketPairResponseData { // From PC
   }
 };
 
-struct PacketPairResponse { // From PC
+struct PacketPairResponse {
   std::string errMsg{};
   PacketPairResponseData data{};
 
@@ -140,9 +141,29 @@ struct PacketUDPBroadcast {
   std::string pcbuIP;
   uint16_t pcbuPort;
   bool isManual;
+  std::string wakeId;
 
   nlohmann::json ToJson() {
-    return {{"deviceId", deviceId}, {"pcbuIP", pcbuIP}, {"pcbuPort", pcbuPort}, {"isManual", isManual}};
+    return {{"deviceId", deviceId}, {"pcbuIP", pcbuIP}, {"pcbuPort", pcbuPort}, {"isManual", isManual}, {"wakeId", wakeId}};
+  }
+};
+
+struct PacketLockRequest {
+  std::string deviceId;
+  std::string encData;
+  std::string cmd{"lock"};
+
+  static std::optional<PacketLockRequest> FromJson(const std::string &jsonStr) {
+    try {
+      auto json = nlohmann::json::parse(jsonStr);
+      auto packet = PacketLockRequest();
+      packet.deviceId = json["deviceId"];
+      packet.encData = json["encData"];
+      packet.cmd = json.value("cmd", "lock");
+      return packet;
+    } catch(...) {
+    }
+    return {};
   }
 };
 
@@ -156,4 +177,4 @@ struct PacketUDPPairBeacon {
   }
 };
 
-#endif // PCBU_DESKTOP_PACKETS_H
+#endif

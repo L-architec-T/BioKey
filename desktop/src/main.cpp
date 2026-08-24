@@ -8,8 +8,8 @@ int main(int argc, char *argv[]) {
   qputenv("QT_QUICK_CONTROLS_STYLE", QByteArray("Material"));
   qputenv("QT_QUICK_CONTROLS_MATERIAL_THEME", QByteArray("Dark"));
   qputenv("QT_QUICK_CONTROLS_MATERIAL_VARIANT", QByteArray("Dense"));
-  qputenv("QT_QUICK_CONTROLS_MATERIAL_PRIMARY", QByteArray("Red"));
-  qputenv("QT_QUICK_CONTROLS_MATERIAL_ACCENT", QByteArray("Teal"));
+  qputenv("QT_QUICK_CONTROLS_MATERIAL_PRIMARY", QByteArray("Amber"));
+  qputenv("QT_QUICK_CONTROLS_MATERIAL_ACCENT", QByteArray("#F0B400"));
   LoggingSystem::Init("desktop");
 
   QGuiApplication app(argc, argv);

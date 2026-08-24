@@ -55,4 +55,4 @@ private:
 #endif
 };
 
-#endif // PCBU_DESKTOP_BLUETOOTHHELPER_H
+#endif

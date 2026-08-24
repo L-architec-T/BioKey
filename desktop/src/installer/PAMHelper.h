@@ -27,4 +27,4 @@ private:
   std::function<void(const std::string &)> m_Logger{};
 };
 
-#endif // PCBU_DESKTOP_PAMHELPER_H
+#endif

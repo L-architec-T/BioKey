@@ -73,7 +73,7 @@ bool BluetoothHelper::PairDevice(const BluetoothDevice &device) {
     return false;
   }
 
-  HWND hwnd = FindWindowA(nullptr, "PC Bio Unlock");
+  HWND hwnd = FindWindowA(nullptr, "BioKey");
   DWORD result = BluetoothAuthenticateDevice(hwnd, nullptr, &deviceInfo, nullptr, 0);
   if(result == ERROR_SUCCESS || result == ERROR_NO_MORE_ITEMS)
     return true;
@@ -107,7 +107,7 @@ std::optional<SDPService> BluetoothHelper::RegisterSDPService(SOCKADDR address) 
   auto service = new WSAQUERYSETW;
   std::memset(service, 0, sizeof(WSAQUERYSETW));
   service->dwSize = sizeof(WSAQUERYSETW);
-  service->lpszServiceInstanceName = (LPWSTR)L"PC Bio Unlock BT";
+  service->lpszServiceInstanceName = (LPWSTR)L"BioKey BT";
   service->lpServiceClassId = &guid;
   service->dwNumberOfCsAddrs = 1;
   CSADDR_INFO csAddr{};

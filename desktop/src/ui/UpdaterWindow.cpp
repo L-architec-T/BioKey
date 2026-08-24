@@ -29,22 +29,7 @@ QString UpdaterWindow::GetLatestVersion() {
 }
 
 void UpdaterWindow::CheckForUpdates(QObject *window) {
-  m_CheckThread = std::thread([this, window]() {
-    try {
-      auto latestVersion = RestClient::CheckForUpdates("PCBioUnlock", "Desktop");
-      m_VersionMutex.lock();
-      m_LatestVersion = QString::fromUtf8(latestVersion);
-      m_VersionMutex.unlock();
-      spdlog::info("Latest version: {}", latestVersion);
-      if(AppInfo::CompareVersion(AppInfo::GetVersion(), latestVersion) == 1)
-        QMetaObject::invokeMethod(window, "showUpdaterWindow");
-    } catch(const std::exception &ex) {
-      spdlog::error("Failed checking for updates: {}", ex.what());
-      m_VersionMutex.lock();
-      m_LatestVersion = {};
-      m_VersionMutex.unlock();
-    }
-  });
+  (void)window;
 }
 
 void UpdaterWindow::OnDownloadClicked(QObject *window) {

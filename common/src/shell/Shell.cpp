@@ -16,7 +16,6 @@
 
 #ifdef WINDOWS
 #include <boost/process/v1/windows.hpp>
-//#include <boost/process/v2/windows/creation_flags.hpp>
 #undef CreateFile
 
 #define SHELL_NAME "cmd.exe"
@@ -51,9 +50,6 @@ bool Shell::IsRunningAsAdmin() {
 }
 
 ShellCmdResult Shell::RunCommand(const std::string &cmd) {
-  /*boost::process::child proc(boost::process::search_path("osascript"), ToDo
-                             std::vector<std::string> {"-e", "do shell script \"echo test\" with administrator privileges"},
-                             boost::process::std_out > outStream);*/
   return RunUserCommand(cmd);
 }
 
@@ -115,22 +111,12 @@ bool Shell::CreateDir(const std::filesystem::path &path) {
   boost::system::error_code ec{};
   boost::filesystem::create_directories(boost::filesystem::path(path), ec);
   return !ec.failed();
-  /*#ifdef WINDOWS
-      return RunCommand(fmt::format("mkdir \"{}\"", path.string())).exitCode == 0;
-  #else
-      return RunCommand(fmt::format("mkdir -p \"{}\"", path.string())).exitCode == 0;
-  #endif*/
 }
 
 bool Shell::RemoveDir(const std::filesystem::path &path) {
   boost::system::error_code ec{};
   boost::filesystem::remove(boost::filesystem::path(path), ec);
   return !ec.failed();
-  /*#ifdef WINDOWS
-      return RunCommand(fmt::format("rd /s /q \"{}\"", path.string())).exitCode == 0;
-  #else
-      return RunCommand(fmt::format("rm -R \"{}\"", path.string())).exitCode == 0;
-  #endif*/
 }
 
 bool Shell::CreateFile(const std::filesystem::path &path) {
@@ -142,11 +128,6 @@ bool Shell::RemoveFile(const std::filesystem::path &path) {
   boost::system::error_code ec{};
   boost::filesystem::remove(boost::filesystem::path(path), ec);
   return !ec.failed();
-  /*#ifdef WINDOWS
-      return RunCommand(fmt::format("del \"{}\"", path.string())).exitCode == 0;
-  #else
-      return RunCommand(fmt::format("rm \"{}\"", path.string())).exitCode == 0;
-  #endif*/
 }
 
 std::vector<uint8_t> Shell::ReadBytes(const std::filesystem::path &path) {

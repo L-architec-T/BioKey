@@ -1,9 +1,9 @@
 [Setup]
-AppName=PC Bio Unlock
-AppVerName=PC Bio Unlock
+AppName=BioKey
+AppVerName=BioKey
 WizardStyle=modern
 DefaultDirName={autopf}\PCBioUnlock
-DefaultGroupName=PC Bio Unlock
+DefaultGroupName=BioKey
 UninstallDisplayIcon={app}\pcbu_desktop.exe
 Compression=lzma2
 SolidCompression=yes
@@ -21,10 +21,10 @@ Source: "..\build\installer_dir\*"; DestDir: "{app}"; Flags: recursesubdirs
 Type: files; Name: "{win}\System32\win-pcbiounlock.dll"
 
 [Icons]
-Name: "{group}\PC Bio Unlock"; Filename: "{app}\pcbu_desktop.exe"
+Name: "{group}\BioKey"; Filename: "{app}\pcbu_desktop.exe"
 
 [Run]
-Filename: "{app}\pcbu_desktop.exe"; Description: "Launch PC Bio Unlock"; Verb: runas; Flags: postinstall nowait skipifsilent runascurrentuser shellexec
+Filename: "{app}\pcbu_desktop.exe"; Description: "Launch BioKey"; Verb: runas; Flags: postinstall nowait skipifsilent runascurrentuser shellexec
 
 [Code]
 const

@@ -15,7 +15,7 @@ struct UDPBroadcastDevice {
 
 class UDPUnlockBroadcaster : public UDPBroadcaster {
 public:
-  UDPUnlockBroadcaster();
+  explicit UDPUnlockBroadcaster(std::string wakeId);
   ~UDPUnlockBroadcaster() override;
 
   void AddDevice(const std::string &deviceID, uint16_t devicePort, bool isManual);
@@ -25,7 +25,8 @@ protected:
 
 private:
   uint16_t m_UnlockPort;
+  std::string m_WakeId;
   std::vector<UDPBroadcastDevice> m_Devices{};
 };
 
-#endif // PCBU_DESKTOP_UDPUNLOCKBROADCASTER_H
+#endif

@@ -18,4 +18,4 @@ private:
   RegistryUtils() = default;
 };
 
-#endif // PCBU_DESKTOP_REGISTRYUTILS_H
+#endif

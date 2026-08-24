@@ -5,6 +5,8 @@ cmake-build-debug
 cmake-build-release
 cmake-nvim-debug
 cmake-nvim-release
+build
+CMakeLists.txt.user
 pkg/build
 common/src/generated
 desktop/res/natives

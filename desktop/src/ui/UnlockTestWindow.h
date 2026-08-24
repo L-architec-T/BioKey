@@ -23,4 +23,4 @@ private:
   std::atomic<bool> m_IsRunning{};
 };
 
-#endif // PCBU_DESKTOP_UNLOCKTESTWINDOW_H
+#endif

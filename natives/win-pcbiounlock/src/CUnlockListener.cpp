@@ -52,7 +52,6 @@ void GetAllKeyState(byte *keys, size_t len) {
 }
 
 void CUnlockListener::ListenThread() {
-  // Init
   m_Credential->UpdateMessage(I18n::Get("initializing"));
   const auto userDomainStr = StringUtils::FromWideString(m_UserDomain);
   const auto userSplit = StringUtils::Split(userDomainStr, "\\");
@@ -61,7 +60,6 @@ void CUnlockListener::ListenThread() {
     return;
   }
 
-  // Wait
   Sleep(500);
   auto storage = AppSettings::Get();
   auto devices = PairedDevicesStorage::GetDevices();
@@ -71,7 +69,6 @@ void CUnlockListener::ListenThread() {
   if(m_ProviderUsage == CPUS_LOGON || m_ProviderUsage == CPUS_UNLOCK_WORKSTATION) {
     const bool isUserLoggedOn = IsUserLoggedOn(m_UserDomain, 15);
 
-    // Network
     if(waitForNetwork) {
       m_Credential->UpdateMessage(I18n::Get("wait_network"));
       while(m_IsRunning) {
@@ -88,7 +85,6 @@ void CUnlockListener::ListenThread() {
       }
     }
 
-    // Unlock behavior
     if(!m_IgnoreWaitKeyPress) {
       const bool isUnlock = m_ProviderUsage == CPUS_UNLOCK_WORKSTATION || (m_ProviderUsage == CPUS_LOGON && isUserLoggedOn);
       if(storage.winUnlockBehavior == "key_press"  || (storage.winUnlockBehavior == "key_press_lock_only" && isUnlock)) {
@@ -104,7 +100,6 @@ void CUnlockListener::ListenThread() {
           Sleep(10);
         }
       } else if(storage.winUnlockBehavior == "foreground_always" || (storage.winUnlockBehavior == "foreground_lock_only" && isUnlock)) {
-        // HACK: Might not be 100% reliable
         DWORD currentProcessId = GetCurrentProcessId();
         while(m_IsRunning) {
           if(HWND hwndForeground = GetForegroundWindow()) {
@@ -120,7 +115,6 @@ void CUnlockListener::ListenThread() {
     }
   }
 
-  // Unlock
   std::function<void(const std::string&)> printMessage = [this](const std::string &s) { m_Credential->UpdateMessage(s); };
   auto handler = UnlockHandler(printMessage);
   const auto result = handler.GetResult(userDomainStr, "Windows-Login", &m_IsRunning);

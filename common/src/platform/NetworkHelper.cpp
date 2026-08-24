@@ -289,7 +289,7 @@ std::vector<BroadcastTarget> NetworkHelper::GetBroadcastTargets() {
     in_addr maskAddr{};
     if(!netIf.netmask.empty() && inet_pton(AF_INET, netIf.netmask.c_str(), &maskAddr) == 1) {
       in_addr bcast{};
-      bcast.s_addr = ipAddr.s_addr | ~maskAddr.s_addr; // directed broadcast = ip | ~mask
+      bcast.s_addr = ipAddr.s_addr | ~maskAddr.s_addr;
       char buffer[INET_ADDRSTRLEN]{};
       if(inet_ntop(AF_INET, &bcast, buffer, INET_ADDRSTRLEN) != nullptr)
         broadcastIP = buffer;
@@ -304,13 +304,13 @@ bool NetworkHelper::IsWiredEthernet(const std::string &ifName) {
   auto base = "/sys/class/net/" + ifName;
   struct stat st{};
   if(stat((base + "/wireless").c_str(), &st) == 0 || stat((base + "/phy80211").c_str(), &st) == 0)
-    return false; // Wi-Fi
+    return false;
   if(stat((base + "/device").c_str(), &st) != 0)
-    return false; // virtual adapters have no device
+    return false;
   std::ifstream typeFile(base + "/type");
   int type = -1;
   if(typeFile >> type)
-    return type == 1; // ARPHRD_ETHER
+    return type == 1;
 #endif
   return false;
 }

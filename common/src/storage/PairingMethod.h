@@ -46,4 +46,4 @@ private:
   PairingMethodUtils() = default;
 };
 
-#endif // PCBU_DESKTOP_PAIRINGMETHOD_H
+#endif

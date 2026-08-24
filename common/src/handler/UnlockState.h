@@ -56,4 +56,4 @@ private:
   UnlockStateUtils() = default;
 };
 
-#endif // PAM_PCBIOUNLOCK_UNLOCKSTATE_H
+#endif

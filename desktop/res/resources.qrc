@@ -3,5 +3,8 @@
     <qresource prefix="/res/">
         <file>licenses.txt</file>
         <file>icons/icon.png</file>
+        <file>icons/buttons/ic_uninstall.svg</file>
+        <file>icons/buttons/ic_reinstall.svg</file>
+        <file>icons/buttons/ic_settings.svg</file>
     </qresource>
 </RCC>

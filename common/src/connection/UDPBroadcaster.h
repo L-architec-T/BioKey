@@ -31,4 +31,4 @@ private:
   std::atomic<bool> m_IsRunning{};
 };
 
-#endif // PCBU_DESKTOP_UDPBROADCASTER_H
+#endif

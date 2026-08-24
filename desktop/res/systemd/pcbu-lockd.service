@@ -1,0 +1,16 @@
+[Unit]
+Description=BioKey (pcbu) remote-lock listener
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/sbin/pcbu_lockd
+Restart=on-failure
+RestartSec=5
+# Root only for /etc/pc-bio-unlock/paired_devices.json read access (same trust
+# boundary as pcbu_auth's setuid); no other privileges are needed or used.
+User=root
+
+[Install]
+WantedBy=multi-user.target

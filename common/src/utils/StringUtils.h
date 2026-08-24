@@ -30,4 +30,4 @@ private:
   StringUtils() = default;
 };
 
-#endif // PCBU_DESKTOP_STRINGUTILS_H
+#endif

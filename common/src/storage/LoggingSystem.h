@@ -13,4 +13,4 @@ private:
   static std::string g_LogName;
 };
 
-#endif // PCBU_DESKTOP_LOGGINGSYSTEM_H
+#endif

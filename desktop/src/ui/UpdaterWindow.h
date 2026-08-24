@@ -28,4 +28,4 @@ private:
   std::thread m_DownloadThread{};
 };
 
-#endif // PCBU_DESKTOP_UPDATERWINDOW_H
+#endif

@@ -137,5 +137,5 @@ elif [[ "$PLATFORM" == "mac" ]]; then
     echo "Waiting for XProtect..."
     while pgrep XProtect; do sleep 3; done
   fi
-  hdiutil create -volname "PC Bio Unlock" -srcfolder dmg_dir/ -ov -format UDZO ./PCBioUnlock-"$ARCH".dmg
+  hdiutil create -volname "BioKey" -srcfolder dmg_dir/ -ov -format UDZO ./PCBioUnlock-"$ARCH".dmg
 fi

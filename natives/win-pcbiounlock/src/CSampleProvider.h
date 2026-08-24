@@ -21,7 +21,6 @@
 
 class CSampleProvider : public ICredentialProvider, public ICredentialProviderSetUserArray {
 public:
-  // IUnknown
   IFACEMETHODIMP_(ULONG) AddRef() {
     return ++_cRef;
   }
@@ -36,8 +35,8 @@ public:
 
   IFACEMETHODIMP QueryInterface(_In_ REFIID riid, _COM_Outptr_ void **ppv) {
     static const QITAB qit[] = {
-        QITABENT(CSampleProvider, ICredentialProvider),             // IID_ICredentialProvider
-        QITABENT(CSampleProvider, ICredentialProviderSetUserArray), // IID_ICredentialProviderSetUserArray
+        QITABENT(CSampleProvider, ICredentialProvider),
+        QITABENT(CSampleProvider, ICredentialProviderSetUserArray),
         {0},
     };
     return QISearch(this, qit, riid, ppv);
@@ -76,12 +75,12 @@ private:
   HRESULT _EnumerateEmptyTileCredential();
 
 private:
-  long _cRef; // Used for reference counting.
+  long _cRef;
   std::vector<CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR> _rgCredProvFieldDescriptors;
   std::vector<CUnlockCredential *> _pCredentials;
   bool _fRecreateEnumeratedCredentials;
   CREDENTIAL_PROVIDER_USAGE_SCENARIO _cpus;
   ICredentialProviderUserArray *_pCredProviderUserArray;
   ICredentialProviderEvents *_pCredProvEvents;
-  UINT_PTR _upAdviseContext; // Used to tell our owner who we are when asking to
+  UINT_PTR _upAdviseContext;
 };

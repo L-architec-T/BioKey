@@ -16,6 +16,7 @@ struct PCBUAppStorage {
   uint16_t pairingDiscoveryPort{};
   uint16_t pairingServerPort{};
   uint16_t unlockServerPort{};
+  uint16_t lockListenPort{};
   uint32_t clientSocketTimeout{};
   uint32_t clientConnectTimeout{};
   uint32_t clientConnectRetries{};
@@ -45,4 +46,4 @@ private:
   static constexpr std::string_view SETTINGS_FILE_NAME = "app_settings.json";
 };
 
-#endif // PCBU_DESKTOP_APPSTORAGE_H
+#endif

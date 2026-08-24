@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Controls.Material
 import QtQuick.Layouts
 import QtQuick.Window
 import QtQuick.Dialogs
@@ -48,6 +49,7 @@ ApplicationWindow {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignBottom | Qt.AlignRight
             Button {
+                Material.roundedScale: Material.SmallScale
                 id: downloadButton
                 text: QI18n.Get('download')
                 onClicked: {
@@ -57,6 +59,7 @@ ApplicationWindow {
                 }
             }
             Button {
+                Material.roundedScale: Material.SmallScale
                 id: ignoreButton
                 text: QI18n.Get('ignore')
                 onClicked: {

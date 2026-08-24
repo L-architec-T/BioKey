@@ -50,7 +50,7 @@ std::map<int, bool> KeyScanner::GetAllKeys() {
   std::lock_guard<std::mutex> lock(m_ScanMutex);
   if(m_KeyMaps.empty())
     return {};
-  return m_KeyMaps[0]; // ToDo
+  return m_KeyMaps[0];
 #endif
 #ifdef APPLE
   auto map = std::map<int, bool>();

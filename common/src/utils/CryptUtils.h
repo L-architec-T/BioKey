@@ -32,4 +32,4 @@ private:
   CryptUtils() = default;
 };
 
-#endif // PCBU_DESKTOP_CRYPTUTILS_H
+#endif

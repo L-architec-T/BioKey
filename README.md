@@ -1,15 +1,54 @@
-# PC Bio Unlock
+![BioKey](docs/banner.png)
 
-**Unlock your PC with your phone.** Instead of typing your password at the login screen, the lock screen or a permission prompt, just confirm it with your fingerprint or face on your Android phone.
+**Unlock your PC with your phone.**
 
-This repository holds the desktop app. The phone app is available on Google Play:
+[![License: GPLv3](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
+![Platforms: Windows | Linux | macOS](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)
+![C++23](https://img.shields.io/badge/C%2B%2B-23-00599C)
+![Qt 6](https://img.shields.io/badge/Qt-6-41CD52)
 
-<a href="https://play.google.com/store/apps/details?id=com.meisapps.pcbiounlock" target="_blank">
-<img alt="Get it on Google Play" src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" height="80">
-</a>
+<p align="center" style="text-align: center;">
+  <a href="README.md"><img alt="English" src="https://img.shields.io/badge/English-1f6feb?style=flat-square"></a>
+  <a href="README.fr.md"><img alt="Français" src="https://img.shields.io/badge/Fran%C3%A7ais-lightgrey?style=flat-square"></a>
+</p>
+
+> This is an independent fork of [PC Bio Unlock](https://github.com/MeisApps/pcbu-desktop) by MeisApps, licensed GPLv3. All credit for the original protocol, desktop app and security design goes to them — this fork builds on top of it with the changes described in [What's new in this fork](#whats-new-in-this-fork).
+
+Instead of typing your password at the login screen, the lock screen or a permission prompt, just confirm it with your fingerprint or face on your Android phone.
+
+This repository holds the desktop app. The companion Android app, **BioKey**, has been rewritten from scratch as its own independent client — it lives in a separate repository and isn't affiliated with or published under the original project's Google Play listing.
 
 > [!WARNING]
 > macOS support is considered experimental and not ready for end users.
+
+<p align="center" style="text-align: center;">
+  <a href="https://github.com/L-architec-T/BioKey/releases/latest"><img alt="Download for Windows" src="https://img.shields.io/badge/Download-Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white"></a>
+  <a href="https://github.com/L-architec-T/BioKey/releases/latest"><img alt="Download for Linux" src="https://img.shields.io/badge/Download-Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black"></a>
+  <a href="https://github.com/L-architec-T/BioKey/releases/latest"><img alt="Download for macOS" src="https://img.shields.io/badge/Download-macOS-000000?style=for-the-badge&logo=apple&logoColor=white"></a>
+</p>
+
+## Table of contents
+
+- [What's new in this fork](#whats-new-in-this-fork)
+- [Features](#features)
+- [Screenshot](#screenshot)
+- [Installation](#installation)
+- [How it works](#how-it-works)
+- [Security & privacy](#security--privacy)
+- [Building from source](#building-from-source)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
+- [Links](#links)
+
+## What's new in this fork
+
+- **Dual UDP + FCM wake** — alongside the existing local UDP broadcast, wake requests can now also be mirrored over Firebase Cloud Messaging, so the unlock prompt still reaches the phone when Wi-Fi power-saving silently drops incoming UDP packets. Both channels carry the same wake ID so the phone can deduplicate the two instead of guessing from a time window.
+- **`pcbu-lockd` daemon (Linux)** — a new background service that talks to AccountsService over D-Bus to auto-select the right user tile at the GDM login/lock screen, so the PAM conversation for the paired account actually starts without a physical click first.
+- **Remote macros and commands** — paired phones can trigger custom keyboard macros on the PC, with keyboard-layout-aware key mapping including French AZERTY, plus remote lock and suspend commands, over a new lightweight command channel.
+- **French localization** — the desktop app is now fully translated into French (`fr_FR`), alongside the existing languages.
+- **Rebuilt Android client** — the companion phone app has been rewritten from scratch and rebranded as **BioKey**.
+- Refreshed app icons and assorted UI polish across the desktop app.
 
 ## Features
 
@@ -23,22 +62,21 @@ This repository holds the desktop app. The phone app is available on Google Play
 
 ### Where it works
 
-**Windows**
-- Login and lock screen
-- UAC prompts
-
-**Linux**
-- Login and lock screen (GDM, SDDM, LightDM, KDE, Cinnamon, Hyprlock)
-- `sudo` and `polkit`
-
-**macOS**\*
-- `sudo` and system permission prompts
+| | Works with |
+|---|---|
+| **Windows** | Login and lock screen, UAC prompts |
+| **Linux** | Login and lock screen (GDM, SDDM, LightDM, KDE, Cinnamon, Hyprlock), `sudo` and `polkit` |
+| **macOS**\* | `sudo` and system permission prompts |
 
 \* experimental
 
+## Screenshot
+
+![BioKey desktop app on Linux](docs/screenshot-linux.png)
+
 ## Installation
 
-Download the latest release for your system from the [releases page](https://github.com/MeisApps/pcbu-desktop/releases), then follow the [installation guide](https://meis-apps.com/pc-bio-unlock/how-to-install), which walks through the system requirements, the setup and the pairing.
+Download the latest release for your system from the [releases page](https://github.com/L-architec-T/BioKey/releases), then follow the [installation guide](https://meis-apps.com/pc-bio-unlock/how-to-install), which walks through the system requirements, the setup and the pairing.
 
 ## How it works
 
@@ -58,7 +96,7 @@ If anything ever goes wrong, nothing is lost: hold <kbd>Left Ctrl</kbd> + <kbd>L
 
 ## Security & privacy
 
-PC Bio Unlock is designed so that using it does not make your PC easier to break into.
+BioKey is designed so that using it does not make your PC easier to break into.
 
 **Your password never leaves your PC.** It is stored encrypted, and the key to it lives only on your paired phone. Your phone never sees your password, it only holds the key, and the password is never sent over the network or to anyone else. Without your phone the stored copy is unreadable, so someone who takes the file off your PC gets nothing usable. On top of that, the file is locked down so that only the system can access it.
 
@@ -72,13 +110,17 @@ PC Bio Unlock is designed so that using it does not make your PC easier to break
 
 **It's auditable.** The full source of both the app and the login components is in this repository, under the GPL.
 
-Found a security issue? Please report it privately through [GitHub security advisories](https://github.com/MeisApps/pcbu-desktop/security/advisories) instead of a public issue.
+Found a security issue? Please report it privately through [GitHub security advisories](https://github.com/L-architec-T/BioKey/security/advisories) instead of a public issue.
 
 ## Building from source
 
 You need CMake 3.22+, a C++23 compiler, Qt 6 and OpenSSL 3. Boost, spdlog, nlohmann/json and cpp-httplib are downloaded automatically during configuration.
 
-**Windows**: Visual Studio 2026, the Windows SDK, [Inno Setup](https://jrsoftware.org/isinfo.php) for the installer, and [vcpkg](https://github.com/microsoft/vcpkg) with `VCPKG_ROOT` set:
+<details>
+<summary><strong>Windows</strong></summary>
+<br>
+
+Visual Studio 2026, the Windows SDK, [Inno Setup](https://jrsoftware.org/isinfo.php) for the installer, and [vcpkg](https://github.com/microsoft/vcpkg) with `VCPKG_ROOT` set:
 
 ```bash
 vcpkg install --overlay-triplets=cmake/vcpkg-triplets --triplet x64-windows-static openssl
@@ -87,7 +129,11 @@ vcpkg install --overlay-triplets=cmake/vcpkg-triplets --triplet x64-windows-stat
 
 For ARM builds, use the `arm64-windows-static` and `arm64-windows-static-md` triplets instead.
 
-**Linux**
+</details>
+
+<details>
+<summary><strong>Linux</strong></summary>
+<br>
 
 ```bash
 sudo apt install build-essential pkg-config cmake git \
@@ -95,7 +141,15 @@ sudo apt install build-essential pkg-config cmake git \
      libgl1-mesa-dev libegl1-mesa-dev libxkbcommon-x11-dev libxcb-cursor-dev
 ```
 
-**macOS**: Xcode command line tools and Qt for macOS.
+</details>
+
+<details>
+<summary><strong>macOS</strong></summary>
+<br>
+
+Xcode command line tools and Qt for macOS.
+
+</details>
 
 ### Build
 
@@ -130,6 +184,6 @@ Issues and pull requests are welcome. A few pointers:
 
 ## Links
 
-- Website: [meis-apps.com](https://meis-apps.com)
-- Android app: [Google Play](https://play.google.com/store/apps/details?id=com.meisapps.pcbiounlock)
-- Support the project: [Ko-fi](https://ko-fi.com/meisapps)
+- Repository: [L-architec-T/BioKey](https://github.com/L-architec-T/BioKey)
+- Android app: not yet published — see the BioKey Android client repository
+- Original project (upstream): [MeisApps/pcbu-desktop](https://github.com/MeisApps/pcbu-desktop)

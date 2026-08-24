@@ -52,4 +52,4 @@ struct PairingUIData {
   bool useLegacy{};
 };
 
-#endif // PCBU_DESKTOP_PAIRINGSTRUCTS_H
+#endif

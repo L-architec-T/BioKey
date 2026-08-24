@@ -4,6 +4,7 @@
 
 #include "generated/LANG_DE_DE.h"
 #include "generated/LANG_EN_US.h"
+#include "generated/LANG_FR_FR.h"
 #include "generated/LANG_PT_BR.h"
 #include "generated/LANG_PT_PT.h"
 #include "generated/LANG_ZH_CN.h"
@@ -14,6 +15,9 @@ std::string I18n::Get(const std::string &key) {
   switch(lang) {
     case LocaleHelper::Locale::GERMAN:
       langJson = &LANG_DE_DE_DATA;
+      break;
+    case LocaleHelper::Locale::FRENCH:
+      langJson = &LANG_FR_FR_DATA;
       break;
     case LocaleHelper::Locale::CHINESE_SIMPLIFIED:
       langJson = &LANG_ZH_CN_DATA;

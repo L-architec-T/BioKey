@@ -18,8 +18,9 @@
 
 constexpr int MAX_CLIENTS = 10;
 
-PairingServer::PairingServer(const std::function<void(const std::string &)> &errorCallback) {
+PairingServer::PairingServer(const std::function<void(const std::string &)> &errorCallback, const std::function<void()> &successCallback) {
   m_ErrorCallback = errorCallback;
+  m_SuccessCallback = successCallback;
 }
 
 PairingServer::~PairingServer() {
@@ -191,6 +192,8 @@ void PairingServer::ClientThread(SOCKET clientSocket) {
     if(WriteEncryptedPacket(clientSocket, PACKET_ID_PAIR_RESPONSE, respPacket.ToJson().dump())) {
       PairedDevicesStorage::AddDevice(device);
       spdlog::info("Successfully paired device. (ID={}, Method={})", device.id, PairingMethodUtils::ToString(device.pairingMethod));
+      if(m_SuccessCallback)
+        m_SuccessCallback();
 #ifdef WINDOWS
       if(PlatformHelper::SetDefaultCredProv(m_UIData.userName, "{74A23DE2-B81D-46EC-E129-CD32507ED716}"))
         spdlog::info("Successfully changed default credential provider for user '{}'.", m_UIData.userName);

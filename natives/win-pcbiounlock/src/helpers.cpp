@@ -14,10 +14,6 @@
 #include <lm.h>
 #include <wtsapi32.h>
 
-//
-// Copies the field descriptor pointed to by rcpfd into a buffer allocated
-// using CoTaskMemAlloc. Returns that buffer in ppcpfd.
-//
 HRESULT FieldDescriptorCoAllocCopy(_In_ const CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR &rcpfd,
                                    _Outptr_result_nullonfailure_ CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR **ppcpfd) {
   HRESULT hr;
@@ -49,11 +45,6 @@ HRESULT FieldDescriptorCoAllocCopy(_In_ const CREDENTIAL_PROVIDER_FIELD_DESCRIPT
   return hr;
 }
 
-//
-// Coppies rcpfd into the buffer pointed to by pcpfd. The caller is responsible for
-// allocating pcpfd. This function uses CoTaskMemAlloc to allocate memory for
-// pcpfd->pszLabel.
-//
 HRESULT FieldDescriptorCopy(_In_ const CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR &rcpfd, _Out_ CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR *pcpfd) {
   HRESULT hr;
   CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR cpfd;
@@ -76,13 +67,6 @@ HRESULT FieldDescriptorCopy(_In_ const CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR &rcp
   return hr;
 }
 
-//
-// This function copies the length of pwz and the pointer pwz into the UNICODE_STRING structure
-// This function is intended for serializing a credential in GetSerialization only.
-// Note that this function just makes a copy of the string pointer. It DOES NOT ALLOCATE storage!
-// Be very, very sure that this is what you want, because it probably isn't outside of the
-// exact GetSerialization call where the sample uses it.
-//
 HRESULT UnicodeStringInitWithString(_In_ PWSTR pwz, _Out_ UNICODE_STRING *pus) {
   HRESULT hr;
   if(pwz) {
@@ -93,7 +77,7 @@ HRESULT UnicodeStringInitWithString(_In_ PWSTR pwz, _Out_ UNICODE_STRING *pus) {
       USHORT usSize;
       hr = SizeTToUShort(sizeof(wchar_t), &usSize);
       if(SUCCEEDED(hr)) {
-        hr = UShortMult(usCharCount, usSize, &(pus->Length)); // Explicitly NOT including NULL terminator
+        hr = UShortMult(usCharCount, usSize, &(pus->Length));
         if(SUCCEEDED(hr)) {
           pus->MaximumLength = pus->Length;
           pus->Buffer = pwz;
@@ -109,13 +93,6 @@ HRESULT UnicodeStringInitWithString(_In_ PWSTR pwz, _Out_ UNICODE_STRING *pus) {
   return hr;
 }
 
-//
-// The following function is intended to be used ONLY with the Kerb*Pack functions.  It does
-// no bounds-checking because its callers have precise requirements and are written to respect
-// its limitations.
-// You can read more about the UNICODE_STRING type at:
-// http://msdn.microsoft.com/library/default.asp?url=/library/en-us/secauthn/security/unicode_string.asp
-//
 static void _UnicodeStringPackedUnicodeStringCopy(__in const UNICODE_STRING &rus, __in PWSTR pwzBuffer, __out UNICODE_STRING *pus) {
   pus->Length = rus.Length;
   pus->MaximumLength = rus.Length;
@@ -124,15 +101,6 @@ static void _UnicodeStringPackedUnicodeStringCopy(__in const UNICODE_STRING &rus
   CopyMemory(pus->Buffer, rus.Buffer, pus->Length);
 }
 
-//
-// Initialize the members of a KERB_INTERACTIVE_UNLOCK_LOGON with weak references to the
-// passed-in strings.  This is useful if you will later use KerbInteractiveUnlockLogonPack
-// to serialize the structure.
-//
-// The password is stored in encrypted form for CPUS_LOGON and CPUS_UNLOCK_WORKSTATION
-// because the system can accept encrypted credentials.  It is not encrypted in CPUS_CREDUI
-// because we cannot know whether our caller can accept encrypted credentials.
-//
 HRESULT KerbInteractiveUnlockLogonInit(_In_ PWSTR pwzDomain, _In_ PWSTR pwzUsername, _In_ PWSTR pwzPassword,
                                        _In_ CREDENTIAL_PROVIDER_USAGE_SCENARIO cpus, _Out_ KERB_INTERACTIVE_UNLOCK_LOGON *pkiul) {
   KERB_INTERACTIVE_UNLOCK_LOGON kiul;
@@ -140,26 +108,13 @@ HRESULT KerbInteractiveUnlockLogonInit(_In_ PWSTR pwzDomain, _In_ PWSTR pwzUsern
 
   KERB_INTERACTIVE_LOGON *pkil = &kiul.Logon;
 
-  // Note: this method uses custom logic to pack a KERB_INTERACTIVE_UNLOCK_LOGON with a
-  // serialized credential.  We could replace the calls to UnicodeStringInitWithString
-  // and KerbInteractiveUnlockLogonPack with a single cal to CredPackAuthenticationBuffer,
-  // but that API has a drawback: it returns a KERB_INTERACTIVE_UNLOCK_LOGON whose
-  // MessageType is always KerbInteractiveLogon.
-  //
-  // If we only handled CPUS_LOGON, this drawback would not be a problem.  For
-  // CPUS_UNLOCK_WORKSTATION, we could cast the output buffer of CredPackAuthenticationBuffer
-  // to KERB_INTERACTIVE_UNLOCK_LOGON and modify the MessageType to KerbWorkstationUnlockLogon,
-  // but such a cast would be unsupported -- the output format of CredPackAuthenticationBuffer
-  // is not officially documented.
 
-  // Initialize the UNICODE_STRINGS to share our username and password strings.
   HRESULT hr = UnicodeStringInitWithString(pwzDomain, &pkil->LogonDomainName);
   if(SUCCEEDED(hr)) {
     hr = UnicodeStringInitWithString(pwzUsername, &pkil->UserName);
     if(SUCCEEDED(hr)) {
       hr = UnicodeStringInitWithString(pwzPassword, &pkil->Password);
       if(SUCCEEDED(hr)) {
-        // Set a MessageType based on the usage scenario.
         switch(cpus) {
           case CPUS_UNLOCK_WORKSTATION:
             pkil->MessageType = KerbWorkstationUnlockLogon;
@@ -178,8 +133,6 @@ HRESULT KerbInteractiveUnlockLogonInit(_In_ PWSTR pwzDomain, _In_ PWSTR pwzUsern
         }
 
         if(SUCCEEDED(hr)) {
-          // KERB_INTERACTIVE_UNLOCK_LOGON is just a series of structures.  A
-          // flat copy will properly initialize the output parameter.
           CopyMemory(pkiul, &kiul, sizeof(*pkiul));
         }
       }
@@ -189,23 +142,6 @@ HRESULT KerbInteractiveUnlockLogonInit(_In_ PWSTR pwzDomain, _In_ PWSTR pwzUsern
   return hr;
 }
 
-//
-// WinLogon and LSA consume "packed" KERB_INTERACTIVE_UNLOCK_LOGONs.  In these, the PWSTR members of each
-// UNICODE_STRING are not actually pointers but byte offsets into the overall buffer represented
-// by the packed KERB_INTERACTIVE_UNLOCK_LOGON.  For example:
-//
-// rkiulIn.Logon.LogonDomainName.Length = 14                                    -> Length is in bytes, not characters
-// rkiulIn.Logon.LogonDomainName.Buffer = sizeof(KERB_INTERACTIVE_UNLOCK_LOGON) -> LogonDomainName begins immediately
-//                                                                              after the KERB_... struct in the buffer
-// rkiulIn.Logon.UserName.Length = 10
-// rkiulIn.Logon.UserName.Buffer = sizeof(KERB_INTERACTIVE_UNLOCK_LOGON) + 14   -> UNICODE_STRINGS are NOT null-terminated
-//
-// rkiulIn.Logon.Password.Length = 16
-// rkiulIn.Logon.Password.Buffer = sizeof(KERB_INTERACTIVE_UNLOCK_LOGON) + 14 + 10
-//
-// THere's more information on this at:
-// http://msdn.microsoft.com/msdnmag/issues/05/06/SecurityBriefs/#void
-//
 
 HRESULT KerbInteractiveUnlockLogonPack(_In_ const KERB_INTERACTIVE_UNLOCK_LOGON &rkiulIn, _Outptr_result_bytebuffer_(*pcb) BYTE **prgb,
                                        _Out_ DWORD *pcb) {
@@ -213,30 +149,18 @@ HRESULT KerbInteractiveUnlockLogonPack(_In_ const KERB_INTERACTIVE_UNLOCK_LOGON 
 
   const KERB_INTERACTIVE_LOGON *pkilIn = &rkiulIn.Logon;
 
-  // alloc space for struct plus extra for the three strings
   DWORD cb = sizeof(rkiulIn) + pkilIn->LogonDomainName.Length + pkilIn->UserName.Length + pkilIn->Password.Length;
 
   KERB_INTERACTIVE_UNLOCK_LOGON *pkiulOut = (KERB_INTERACTIVE_UNLOCK_LOGON *)CoTaskMemAlloc(cb);
   if(pkiulOut) {
     ZeroMemory(&pkiulOut->LogonId, sizeof(pkiulOut->LogonId));
 
-    //
-    // point pbBuffer at the beginning of the extra space
-    //
     BYTE *pbBuffer = (BYTE *)pkiulOut + sizeof(*pkiulOut);
 
-    //
-    // set up the Logon structure within the KERB_INTERACTIVE_UNLOCK_LOGON
-    //
     KERB_INTERACTIVE_LOGON *pkilOut = &pkiulOut->Logon;
 
     pkilOut->MessageType = pkilIn->MessageType;
 
-    //
-    // copy each string,
-    // fix up appropriate buffer pointer to be offset,
-    // advance buffer pointer over copied characters in extra space
-    //
     _UnicodeStringPackedUnicodeStringCopy(pkilIn->LogonDomainName, (PWSTR)pbBuffer, &pkilOut->LogonDomainName);
     pkilOut->LogonDomainName.Buffer = (PWSTR)(pbBuffer - (BYTE *)pkiulOut);
     pbBuffer += pkilOut->LogonDomainName.Length;
@@ -259,10 +183,6 @@ HRESULT KerbInteractiveUnlockLogonPack(_In_ const KERB_INTERACTIVE_UNLOCK_LOGON 
   return hr;
 }
 
-//
-// This function packs the string pszSourceString in pszDestinationString
-// for use with LSA functions including LsaLookupAuthenticationPackage.
-//
 static HRESULT _LsaInitString(__out PSTRING pszDestinationString, __in PCSTR pszSourceString) {
   size_t cchLength = strlen(pszSourceString);
   USHORT usLength;
@@ -276,11 +196,6 @@ static HRESULT _LsaInitString(__out PSTRING pszDestinationString, __in PCSTR psz
   return hr;
 }
 
-//
-// Retrieves the 'negotiate' AuthPackage from the LSA. In this case, Kerberos
-// For more information on auth packages see this msdn page:
-// http://msdn.microsoft.com/library/default.asp?url=/library/en-us/secauthn/security/msv1_0_lm20_logon.asp
-//
 HRESULT RetrieveNegotiateAuthPackage(_Out_ ULONG *pulAuthPackage) {
   HRESULT hr;
   HANDLE hLsa;
@@ -306,33 +221,19 @@ HRESULT RetrieveNegotiateAuthPackage(_Out_ ULONG *pulAuthPackage) {
   return hr;
 }
 
-//
-// Return a copy of pwzToProtect encrypted with the CredProtect API.
-//
-// pwzToProtect must not be NULL or the empty string.
-//
 static HRESULT _ProtectAndCopyString(_In_ PCWSTR pwzToProtect, _Outptr_result_nullonfailure_ PWSTR *ppwzProtected) {
   *ppwzProtected = nullptr;
 
-  // pwzToProtect is const, but CredProtect takes a non-const string.
-  // So, make a copy that we know isn't const.
   PWSTR pwzToProtectCopy;
   HRESULT hr = SHStrDupW(pwzToProtect, &pwzToProtectCopy);
   if(SUCCEEDED(hr)) {
-    // The first call to CredProtect determines the length of the encrypted string.
-    // Because we pass a NULL output buffer, we expect the call to fail.
-    //
-    // Note that the third parameter to CredProtect, the number of characters of pwzToProtectCopy
-    // to encrypt, must include the NULL terminator!
     DWORD cchProtected = 0;
     if(!CredProtectW(FALSE, pwzToProtectCopy, (DWORD)wcslen(pwzToProtectCopy) + 1, nullptr, &cchProtected, nullptr)) {
       DWORD dwErr = GetLastError();
 
       if((ERROR_INSUFFICIENT_BUFFER == dwErr) && (0 < cchProtected)) {
-        // Allocate a buffer long enough for the encrypted string.
         PWSTR pwzProtected = (PWSTR)CoTaskMemAlloc(cchProtected * sizeof(wchar_t));
         if(pwzProtected) {
-          // The second call to CredProtect actually encrypts the string.
           if(CredProtectW(FALSE, pwzToProtectCopy, (DWORD)wcslen(pwzToProtectCopy) + 1, pwzProtected, &cchProtected, nullptr)) {
             *ppwzProtected = pwzProtected;
             hr = S_OK;
@@ -358,39 +259,25 @@ static HRESULT _ProtectAndCopyString(_In_ PCWSTR pwzToProtect, _Outptr_result_nu
   return hr;
 }
 
-//
-// If pwzPassword should be encrypted, return a copy encrypted with CredProtect.
-//
-// If not, just return a copy.
-//
 HRESULT ProtectIfNecessaryAndCopyPassword(_In_ PCWSTR pwzPassword, _In_ CREDENTIAL_PROVIDER_USAGE_SCENARIO cpus,
                                           _Outptr_result_nullonfailure_ PWSTR *ppwzProtectedPassword) {
   *ppwzProtectedPassword = nullptr;
 
   HRESULT hr;
 
-  // ProtectAndCopyString is intended for non-empty strings only.  Empty passwords
-  // do not need to be encrypted.
   if(pwzPassword && *pwzPassword) {
-    // pwzPassword is const, but CredIsProtected takes a non-const string.
-    // So, ake a copy that we know isn't const.
     PWSTR pwzPasswordCopy;
     hr = SHStrDupW(pwzPassword, &pwzPasswordCopy);
     if(SUCCEEDED(hr)) {
       bool bCredAlreadyEncrypted = false;
       CRED_PROTECTION_TYPE protectionType;
 
-      // If the password is already encrypted, we should not encrypt it again.
-      // An encrypted password may be received through SetSerialization in the
-      // CPUS_LOGON scenario during a Terminal Services connection, for instance.
       if(CredIsProtectedW(pwzPasswordCopy, &protectionType)) {
         if(CredUnprotected != protectionType) {
           bCredAlreadyEncrypted = true;
         }
       }
 
-      // Passwords should not be encrypted in the CPUS_CREDUI scenario.  We
-      // cannot know if our caller expects or can handle an encryped password.
       if(CPUS_CREDUI == cpus || bCredAlreadyEncrypted) {
         hr = SHStrDupW(pwzPasswordCopy, ppwzProtectedPassword);
       } else {
@@ -406,17 +293,10 @@ HRESULT ProtectIfNecessaryAndCopyPassword(_In_ PCWSTR pwzPassword, _In_ CREDENTI
   return hr;
 }
 
-//
-// Unpack a KERB_INTERACTIVE_UNLOCK_LOGON *in place*.  That is, reset the Buffers from being offsets to
-// being real pointers.  This means, of course, that passing the resultant struct across any sort of
-// memory space boundary is not going to work -- repack it if necessary!
-//
 void KerbInteractiveUnlockLogonUnpackInPlace(_Inout_updates_bytes_(cb) KERB_INTERACTIVE_UNLOCK_LOGON *pkiul, DWORD cb) {
   if(sizeof(*pkiul) <= cb) {
     KERB_INTERACTIVE_LOGON *pkil = &pkiul->Logon;
 
-    // Sanity check: if the range described by each (Buffer + MaximumSize) falls within the total bytecount,
-    // we can be pretty confident that the Buffers are actually offsets and that this is a packed credential.
     if(((ULONG_PTR)pkil->LogonDomainName.Buffer + pkil->LogonDomainName.MaximumLength <= cb) &&
        ((ULONG_PTR)pkil->UserName.Buffer + pkil->UserName.MaximumLength <= cb) &&
        ((ULONG_PTR)pkil->Password.Buffer + pkil->Password.MaximumLength <= cb)) {
@@ -429,10 +309,6 @@ void KerbInteractiveUnlockLogonUnpackInPlace(_Inout_updates_bytes_(cb) KERB_INTE
   }
 }
 
-//
-// Use the CredPackAuthenticationBuffer and CredUnpackAuthenticationBuffer to convert a 32 bit WOW
-// cred blob into a 64 bit native blob by unpacking it and immediately repacking it.
-//
 HRESULT KerbInteractiveUnlockLogonRepackNative(_In_reads_bytes_(cbWow) BYTE *rgbWow, _In_ DWORD cbWow,
                                                _Outptr_result_bytebuffer_(*pcbNative) BYTE **prgbNative, _Out_ DWORD *pcbNative) {
   HRESULT hr = E_OUTOFMEMORY;
@@ -444,7 +320,6 @@ HRESULT KerbInteractiveUnlockLogonRepackNative(_In_reads_bytes_(cbWow) BYTE *rgb
   *prgbNative = nullptr;
   *pcbNative = 0;
 
-  // Unpack the 32 bit KERB structure
   CredUnPackAuthenticationBufferW(CRED_PACK_WOW_BUFFER, rgbWow, cbWow, pszDomainUsername, &cchDomainUsername, nullptr, nullptr, pszPassword,
                                   &cchPassword);
   if(ERROR_INSUFFICIENT_BUFFER == GetLastError()) {
@@ -462,7 +337,6 @@ HRESULT KerbInteractiveUnlockLogonRepackNative(_In_reads_bytes_(cbWow) BYTE *rgb
     }
   }
 
-  // Repack native
   if(SUCCEEDED(hr)) {
     hr = E_OUTOFMEMORY;
     CredPackAuthenticationBufferW(0, pszDomainUsername, pszPassword, *prgbNative, pcbNative);
@@ -486,13 +360,11 @@ HRESULT KerbInteractiveUnlockLogonRepackNative(_In_reads_bytes_(cbWow) BYTE *rgb
   return hr;
 }
 
-// Concatonates pwszDomain and pwszUsername and places the result in *ppwszDomainUsername.
 HRESULT DomainUsernameStringAlloc(_In_ PCWSTR pwszDomain, _In_ PCWSTR pwszUsername, _Outptr_result_nullonfailure_ PWSTR *ppwszDomainUsername) {
   HRESULT hr;
   *ppwszDomainUsername = nullptr;
   size_t cchDomain = wcslen(pwszDomain);
   size_t cchUsername = wcslen(pwszUsername);
-  // Length of domain, 1 character for '\', length of Username, plus null terminator.
   size_t cbLen = sizeof(wchar_t) * (cchDomain + 1 + cchUsername + 1);
   PWSTR pwszDest = (PWSTR)HeapAlloc(GetProcessHeap(), 0, cbLen);
   if(pwszDest) {
@@ -525,12 +397,12 @@ HRESULT SplitDomainAndUsername(_In_ PCWSTR pszQualifiedUserName, _Outptr_result_
     const wchar_t *pchUsernameBegin = pchWhack + 1;
     const wchar_t *pchUsernameEnd = pchEnd;
 
-    size_t lenDomain = pchDomainEnd - pchDomainBegin + 1; // number of actual chars, NOT INCLUDING null terminated string
+    size_t lenDomain = pchDomainEnd - pchDomainBegin + 1;
     pszDomain = static_cast<PWSTR>(CoTaskMemAlloc(sizeof(wchar_t) * (lenDomain + 1)));
     if(pszDomain != nullptr) {
       hr = StringCchCopyNW(pszDomain, lenDomain + 1, pchDomainBegin, lenDomain);
       if(SUCCEEDED(hr)) {
-        size_t lenUsername = pchUsernameEnd - pchUsernameBegin + 1; // number of actual chars, NOT INCLUDING null terminated string
+        size_t lenUsername = pchUsernameEnd - pchUsernameBegin + 1;
         pszUsername = static_cast<PWSTR>(CoTaskMemAlloc(sizeof(wchar_t) * (lenUsername + 1)));
         if(pszUsername != nullptr) {
           hr = StringCchCopyNW(pszUsername, lenUsername + 1, pchUsernameBegin, lenUsername);

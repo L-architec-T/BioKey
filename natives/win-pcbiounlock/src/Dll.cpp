@@ -15,8 +15,8 @@
 #include "helpers.h"
 // clang-format on
 
-static long g_cRef = 0;   // global dll reference count
-HINSTANCE g_hinst = NULL; // global dll hinstance
+static long g_cRef = 0;
+HINSTANCE g_hinst = NULL;
 
 extern HRESULT CSample_CreateInstance(__in REFIID riid, __deref_out void **ppv);
 EXTERN_C GUID CLSID_CSample;
@@ -25,7 +25,6 @@ class CClassFactory : public IClassFactory {
 public:
   CClassFactory() : _cRef(1) {}
 
-  // IUnknown
   IFACEMETHODIMP QueryInterface(__in REFIID riid, __deref_out void **ppv) {
     static const QITAB qit[] = {
         QITABENT(CClassFactory, IClassFactory),
@@ -45,7 +44,6 @@ public:
     return cRef;
   }
 
-  // IClassFactory
   IFACEMETHODIMP CreateInstance(__in IUnknown *pUnkOuter, __in REFIID riid, __deref_out void **ppv) {
     HRESULT hr;
     if(!pUnkOuter) {

@@ -16,4 +16,4 @@ private:
   ResourceHelper() = default;
 };
 
-#endif // PCBU_DESKTOP_RESOURCEHELPER_H
+#endif

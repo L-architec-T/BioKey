@@ -81,6 +81,8 @@ add_library(pcbu_common
         src/connection/unlock/BaseUnlockConnection.cpp
         src/connection/unlock/UDPUnlockBroadcaster.cpp
         src/connection/unlock/UDPUnlockBroadcaster.h
+        src/connection/unlock/FCMUnlockSender.cpp
+        src/connection/unlock/FCMUnlockSender.h
         src/connection/unlock/clients/TCPUnlockClient.h
         src/connection/unlock/clients/TCPUnlockClient.cpp
         src/connection/unlock/clients/BTUnlockClient.h
@@ -196,6 +198,7 @@ function(embed_json TARGET JSON_FILE VARIABLE_PREFIX)
     add_dependencies(${TARGET} generate_json_header_${VARIABLE_PREFIX})
 endfunction()
 embed_json(pcbu_common res/en_US.json LANG_EN_US)
+embed_json(pcbu_common res/fr_FR.json LANG_FR_FR)
 embed_json(pcbu_common res/de_DE.json LANG_DE_DE)
 embed_json(pcbu_common res/zh_CN.json LANG_ZH_CN)
 embed_json(pcbu_common res/pt_PT.json LANG_PT_PT)

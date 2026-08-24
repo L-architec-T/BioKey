@@ -12,4 +12,4 @@ public:
   Q_INVOKABLE QString Get(const QString &key, const QVariantList &args = QVariantList());
 };
 
-#endif // PCBU_DESKTOP_I18NWRAPPER_H
+#endif

@@ -12,7 +12,7 @@
 
 class PairingServer : public BaseConnection {
 public:
-  explicit PairingServer(const std::function<void(const std::string&)>& errorCallback);
+  PairingServer(const std::function<void(const std::string&)>& errorCallback, const std::function<void()>& successCallback);
   ~PairingServer() override;
 
   bool Start(const PairingUIData &uiData);
@@ -32,6 +32,7 @@ private:
 
   PairingUIData m_UIData{};
   std::function<void(const std::string&)> m_ErrorCallback{};
+  std::function<void()> m_SuccessCallback{};
 };
 
-#endif // PCBU_DESKTOP_PAIRINGSERVER_H
+#endif

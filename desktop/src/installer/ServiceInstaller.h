@@ -21,20 +21,16 @@ struct ServiceSetting {
   std::string id{};
   std::string name{};
 
-  // Toggle
   bool enabled{};
   bool defaultVal{};
 
-  // Choice
   std::vector<ServiceSettingOption> options{};
   std::string selectedValue{};
   std::string defaultValue{};
 
-  // Toggle setting
   ServiceSetting(std::string id, std::string name, bool enabled, bool defaultVal)
       : type("toggle"), id(std::move(id)), name(std::move(name)), enabled(enabled), defaultVal(defaultVal) {}
 
-  // Choice setting
   ServiceSetting(std::string id, std::string name, std::vector<ServiceSettingOption> options, std::string selectedValue,
                  std::string defaultValue)
       : type("choice"), id(std::move(id)), name(std::move(name)), options(std::move(options)), selectedValue(std::move(selectedValue)),
@@ -62,6 +58,10 @@ public:
 
 private:
   static bool IsProgramInstalled(const std::string &pathName);
+#if defined(LINUX)
+  void InstallLockd();
+  void UninstallLockd();
+#endif
 
   std::function<void(const std::string &)> m_Logger{};
 #if defined(LINUX) || defined(APPLE)
@@ -69,4 +69,4 @@ private:
 #endif
 };
 
-#endif // PCBU_DESKTOP_SERVICEINSTALLER_H
+#endif

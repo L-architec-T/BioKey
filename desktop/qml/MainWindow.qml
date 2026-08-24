@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Controls.Material
 import QtQuick.Layouts
 import QtQuick.Window
 import QtQuick.Dialogs
@@ -7,12 +8,14 @@ import PCBioUnlock
 
 ApplicationWindow {
     id: window
-    width: 1024
-    height: 768
-    minimumWidth: 1024
-    minimumHeight: 768
+    width: 1150
+    height: 720
+    minimumWidth: 1150
+    minimumHeight: 720
     visible: true
-    title: 'PC Bio Unlock'
+    title: 'BioKey'
+    color: '#181818'
+    Material.roundedScale: Material.SmallScale
 
     property bool canClose: true
     onClosing: function(close) { close.accepted = window.canClose }
@@ -20,15 +23,25 @@ ApplicationWindow {
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 25
-        Label {
+        RowLayout {
             id: title
-            text: 'PC Bio Unlock'
-            font.pointSize: 36
+            spacing: 12
+            Image {
+                source: 'qrc:/res/icons/icon.png'
+                Layout.preferredWidth: 60
+                Layout.preferredHeight: 60
+                fillMode: Image.PreserveAspectFit
+            }
+            Label {
+                text: 'BioKey'
+                font.pointSize: 36
+            }
         }
         Loader {
             id: viewLoader
             Layout.fillWidth: true
             Layout.fillHeight: true
+            Layout.topMargin: 14
             source: "qrc:/ui/forms/MainForm.qml"
         }
     }

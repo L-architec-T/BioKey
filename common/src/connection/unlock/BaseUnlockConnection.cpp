@@ -151,7 +151,6 @@ bool BaseUnlockConnection::SendUnlockRequest(SOCKET socket) {
 }
 
 void BaseUnlockConnection::OnResponseReceived(const Packet &packet) {
-  // Parse data
   auto respStr = std::string(packet.data.begin(), packet.data.end());
   auto responsePacket = PacketUnlockResponse::FromJson(respStr);
   if(!responsePacket.has_value()) {
@@ -160,7 +159,6 @@ void BaseUnlockConnection::OnResponseReceived(const Packet &packet) {
     return;
   }
 
-  // Error handling
   auto error = responsePacket.value().error;
   if(!error.empty()) {
     spdlog::error("Error in response packet: {}", error);
@@ -182,7 +180,6 @@ void BaseUnlockConnection::OnResponseReceived(const Packet &packet) {
     return;
   }
 
-  // Decrypt data
   auto cryptData = StringUtils::FromHexString(responsePacket.value().encData);
   auto cryptResult = CryptUtils::DecryptAESPacket(cryptData, m_PairedDevice.encryptionKey);
   if(cryptResult.result != PacketCryptResult::OK) {
@@ -201,7 +198,6 @@ void BaseUnlockConnection::OnResponseReceived(const Packet &packet) {
     return;
   }
 
-  // Parse encrypted data
   auto dataStr = std::string(cryptResult.data.begin(), cryptResult.data.end());
   auto dataPacket = PacketUnlockResponseData::FromJson(dataStr);
   if(!dataPacket.has_value()) {
@@ -211,7 +207,6 @@ void BaseUnlockConnection::OnResponseReceived(const Packet &packet) {
   }
   m_ResponseData = dataPacket.value();
 
-  // Token check
   if(m_ResponseData.unlockToken == m_UnlockToken) {
     m_UnlockState = UnlockState::SUCCESS;
   } else {

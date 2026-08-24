@@ -4,7 +4,9 @@
 #include "connection/unlock/clients/BTUnlockClient.h"
 #include "connection/unlock/clients/TCPUnlockClient.h"
 #include "connection/unlock/servers/TCPUnlockServer.h"
+#include "platform/NetworkHelper.h"
 #include "storage/AppSettings.h"
+#include "utils/StringUtils.h"
 
 #ifdef WINDOWS
 #include <Windows.h>
@@ -26,8 +28,10 @@ UnlockResult UnlockHandler::GetResult(const std::string &authUser, const std::st
   auto settings = AppSettings::Get();
   auto devices = PairedDevicesStorage::GetDevicesForUser(authUser);
   auto hasTCPServer = false;
+  auto wakeId = StringUtils::RandomString(16);
 
   UDPUnlockBroadcaster *udpBroadcaster{};
+  std::vector<PairedDevice> fcmDevices{};
   std::vector<BaseUnlockConnection *> connections{};
   for(const auto &device : devices) {
     BaseUnlockConnection *connection{};
@@ -41,9 +45,11 @@ UnlockResult UnlockHandler::GetResult(const std::string &authUser, const std::st
       case PairingMethod::MANUAL_UDP:
       case PairingMethod::UDP: {
         if(udpBroadcaster == nullptr)
-          udpBroadcaster = new UDPUnlockBroadcaster();
+          udpBroadcaster = new UDPUnlockBroadcaster(wakeId);
         auto port = device.pairingMethod == PairingMethod::UDP ? device.udpPort : device.udpManualPort;
         udpBroadcaster->AddDevice(device.id, port, device.pairingMethod == PairingMethod::MANUAL_UDP);
+        if(!device.cloudToken.empty())
+          fcmDevices.emplace_back(device);
       }
       case PairingMethod::CLOUD_TCP:
         hasTCPServer = true;
@@ -70,7 +76,6 @@ UnlockResult UnlockHandler::GetResult(const std::string &authUser, const std::st
     return UnlockResult(UnlockState::NOT_PAIRED_ERROR);
   }
 
-  // Start servers
   std::vector<std::thread> threads{};
   AtomicUnlockResult currentResult{};
   std::atomic completed(0);
@@ -93,17 +98,21 @@ UnlockResult UnlockHandler::GetResult(const std::string &authUser, const std::st
     });
   }
 
-  // UDP Broadcast
   if(udpBroadcaster) {
     udpBroadcaster->Start();
   }
 
-  // Wait
+  if(!fcmDevices.empty()) {
+    auto pcbuIP = NetworkHelper::GetSavedNetworkInterface().ipAddress;
+    FCMUnlockSender fcmSender;
+    for(const auto &device : fcmDevices)
+      fcmSender.SendWake(device.cloudToken, device.id, pcbuIP, settings.unlockServerPort, device.pairingMethod == PairingMethod::MANUAL_UDP, wakeId);
+  }
+
   std::unique_lock lock(mutex);
   cv.wait(lock, [&] { return completed.load() == numServers; });
   auto result = currentResult.load();
 
-  // Cleanup
   if(udpBroadcaster) {
     udpBroadcaster->Stop();
     delete udpBroadcaster;

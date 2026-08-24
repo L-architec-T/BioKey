@@ -14,4 +14,4 @@ private:
   void *m_Wrapper{};
 };
 
-#endif // PCBU_DESKTOP_BTUNLOCKCLIENT_MAC_H
+#endif

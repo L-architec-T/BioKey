@@ -56,7 +56,6 @@ void ServiceInstaller::Install() {
   result = Shell::WriteBytes(pamPath, pamModule);
   if(!result)
     throw std::runtime_error(I18n::Get("error_file_write", pamPath.string()));
-  // ToDo: Firewall echo "pass in proto tcp from any to any port 43295" | sudo pfctl -ef -
   m_Logger("Done.");
 }
 

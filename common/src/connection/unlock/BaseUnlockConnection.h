@@ -63,4 +63,4 @@ protected:
   std::string m_UnlockToken{};
 };
 
-#endif // PAM_PCBIOUNLOCK_BASEUNLOCKSERVER_H
+#endif

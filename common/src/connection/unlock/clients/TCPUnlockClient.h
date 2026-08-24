@@ -18,4 +18,4 @@ private:
   SOCKET m_ClientSocket;
 };
 
-#endif // PAM_PCBIOUNLOCK_TCPUNLOCKCLIENT_H
+#endif

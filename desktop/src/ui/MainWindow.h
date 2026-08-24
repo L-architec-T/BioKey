@@ -30,4 +30,4 @@ private:
   std::thread m_LoadingThread{};
 };
 
-#endif // PCBU_DESKTOP_MAINWINDOW_H
+#endif

@@ -10,6 +10,11 @@
 #define PAM_MODULE_DIRS std::vector<std::filesystem::path>{"/lib/security/", "/lib64/security/"}
 #define PAM_MODULE_FILE "pam_pcbiounlock.so"
 
+#define LOCKD_MODULE_FILE "pcbu_lockd"
+#define LOCKD_SERVICE_FILE "pcbu-lockd.service"
+#define LOCKD_SERVICE_DIR std::filesystem::path("/etc/systemd/system/")
+#define LOCKD_SERVICE_NAME "pcbu-lockd"
+
 #define PAM_CONFIG_ENTRY "auth sufficient pam_pcbiounlock.so"
 #define PAM_CONFIG_ENTRY_SDDM                                                                                                                        \
   "auth [success=1 new_authtok_reqd=1 default=ignore] pam_unix.so try_first_pass likeauth nullok\nauth sufficient pam_pcbiounlock.so"
@@ -110,7 +115,8 @@ void ServiceInstaller::Install() {
     m_Logger("Adding firewall rules (ufw)...");
     result = Shell::RunCommand(fmt::format("ufw allow {}/udp", settings.pairingDiscoveryPort)).exitCode == 0 &&
              Shell::RunCommand(fmt::format("ufw allow {}/tcp", settings.pairingServerPort)).exitCode == 0 &&
-             Shell::RunCommand(fmt::format("ufw allow {}/tcp", settings.unlockServerPort)).exitCode == 0;
+             Shell::RunCommand(fmt::format("ufw allow {}/tcp", settings.unlockServerPort)).exitCode == 0 &&
+             Shell::RunCommand(fmt::format("ufw allow {}/udp", settings.lockListenPort)).exitCode == 0;
     if(!result)
       m_Logger(I18n::Get("error_firewall_rule_add", "ufw"));
   }
@@ -120,6 +126,7 @@ void ServiceInstaller::Install() {
         Shell::RunCommand(fmt::format("firewall-cmd --zone=public --add-port={}/udp --permanent", settings.pairingDiscoveryPort)).exitCode == 0 &&
         Shell::RunCommand(fmt::format("firewall-cmd --zone=public --add-port={}/tcp --permanent", settings.pairingServerPort)).exitCode == 0 &&
         Shell::RunCommand(fmt::format("firewall-cmd --zone=public --add-port={}/tcp --permanent", settings.unlockServerPort)).exitCode == 0 &&
+        Shell::RunCommand(fmt::format("firewall-cmd --zone=public --add-port={}/udp --permanent", settings.lockListenPort)).exitCode == 0 &&
         Shell::RunCommand("firewall-cmd --reload").exitCode == 0;
     if(!result)
       m_Logger(I18n::Get("error_firewall_rule_add", "firewalld"));
@@ -134,7 +141,39 @@ void ServiceInstaller::Install() {
       throw std::runtime_error(I18n::Get("error_selinux_policy_install"));
     Shell::RemoveFile(tmpPath);
   }
+
+  m_Logger("Installing remote-lock listener...");
+  InstallLockd();
   m_Logger("Done.");
+}
+
+void ServiceInstaller::InstallLockd() {
+  try {
+    auto lockdExe = ResourceHelper::GetResource(":/res/natives/{}", LOCKD_MODULE_FILE);
+    auto exePath = EXE_MODULE_DIR / LOCKD_MODULE_FILE;
+    if(!Shell::WriteBytes(exePath, lockdExe))
+      throw std::runtime_error(I18n::Get("error_file_write", exePath.string()));
+    if(Shell::RunCommand(fmt::format("chmod +x {}", exePath.string())).exitCode != 0)
+      throw std::runtime_error(I18n::Get("error_exec_setuid", exePath.string()));
+
+    auto serviceUnit = ResourceHelper::GetResource(":/res/systemd/{}", LOCKD_SERVICE_FILE);
+    auto servicePath = LOCKD_SERVICE_DIR / LOCKD_SERVICE_FILE;
+    if(!Shell::WriteBytes(servicePath, serviceUnit))
+      throw std::runtime_error(I18n::Get("error_file_write", servicePath.string()));
+
+    if(Shell::RunCommand("systemctl daemon-reload").exitCode != 0 ||
+       Shell::RunCommand(fmt::format("systemctl enable --now {}", LOCKD_SERVICE_NAME)).exitCode != 0)
+      throw std::runtime_error(fmt::format("Failed to enable {}.", LOCKD_SERVICE_NAME));
+  } catch(const std::exception &ex) {
+    spdlog::error("Remote-lock listener install failed (feature will be unavailable): {}", ex.what());
+  }
+}
+
+void ServiceInstaller::UninstallLockd() {
+  Shell::RunCommand(fmt::format("systemctl disable --now {}", LOCKD_SERVICE_NAME));
+  Shell::RemoveFile(LOCKD_SERVICE_DIR / LOCKD_SERVICE_FILE);
+  Shell::RemoveFile(EXE_MODULE_DIR / LOCKD_MODULE_FILE);
+  Shell::RunCommand("systemctl daemon-reload");
 }
 
 void ServiceInstaller::Uninstall() {
@@ -159,7 +198,8 @@ void ServiceInstaller::Uninstall() {
     m_Logger("Removing firewall rules (ufw)...");
     result = Shell::RunCommand(fmt::format("ufw delete allow {}/udp", settings.pairingDiscoveryPort)).exitCode == 0 &&
              Shell::RunCommand(fmt::format("ufw delete allow {}/tcp", settings.pairingServerPort)).exitCode == 0 &&
-             Shell::RunCommand(fmt::format("ufw delete allow {}/tcp", settings.unlockServerPort)).exitCode == 0;
+             Shell::RunCommand(fmt::format("ufw delete allow {}/tcp", settings.unlockServerPort)).exitCode == 0 &&
+             Shell::RunCommand(fmt::format("ufw delete allow {}/udp", settings.lockListenPort)).exitCode == 0;
     if(!result)
       m_Logger(I18n::Get("error_firewall_rule_remove", "ufw"));
   }
@@ -169,6 +209,7 @@ void ServiceInstaller::Uninstall() {
         Shell::RunCommand(fmt::format("firewall-cmd --zone=public --remove-port={}/udp --permanent", settings.pairingDiscoveryPort)).exitCode == 0 &&
         Shell::RunCommand(fmt::format("firewall-cmd --zone=public --remove-port={}/tcp --permanent", settings.pairingServerPort)).exitCode == 0 &&
         Shell::RunCommand(fmt::format("firewall-cmd --zone=public --remove-port={}/tcp --permanent", settings.unlockServerPort)).exitCode == 0 &&
+        Shell::RunCommand(fmt::format("firewall-cmd --zone=public --remove-port={}/udp --permanent", settings.lockListenPort)).exitCode == 0 &&
         Shell::RunCommand("firewall-cmd --reload").exitCode == 0;
     if(!result)
       m_Logger(I18n::Get("error_firewall_rule_remove", "firewalld"));
@@ -179,6 +220,9 @@ void ServiceInstaller::Uninstall() {
     if(!result)
       throw std::runtime_error(I18n::Get("error_selinux_policy_uninstall"));
   }
+
+  m_Logger("Removing remote-lock listener...");
+  UninstallLockd();
   m_Logger("Done.");
 }
 

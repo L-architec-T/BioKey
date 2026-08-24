@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Controls.Material
 import QtQuick.Layouts
 
 import PCBioUnlock
@@ -38,6 +39,7 @@ Form {
                 readOnly: true
             }
             Button {
+                Material.roundedScale: Material.SmallScale
                 id: loadOkButton
                 Layout.minimumWidth: 100
                 Layout.minimumHeight: 50

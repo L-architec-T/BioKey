@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Controls.Material
 import QtQuick.Layouts
 import QtQuick.Window
 import QtQuick.Dialogs
@@ -36,6 +37,7 @@ ApplicationWindow {
             }
         }
         Button {
+            Material.roundedScale: Material.SmallScale
             id: btnUnlockAction
             Layout.fillWidth: true
             Layout.leftMargin: 20

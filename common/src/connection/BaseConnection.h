@@ -39,4 +39,4 @@ private:
   static PacketError GetPacketError(int result, int error);
 };
 
-#endif // PCBU_DESKTOP_BASECONNECTION_H
+#endif

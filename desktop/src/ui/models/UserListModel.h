@@ -35,4 +35,4 @@ private:
   QVector<UserListItem> m_ListData{};
 };
 
-#endif // PCBU_DESKTOP_USERLISTMODEL_H
+#endif

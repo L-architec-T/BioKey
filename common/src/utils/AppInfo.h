@@ -18,4 +18,4 @@ private:
   AppInfo() = default;
 };
 
-#endif // PCBU_DESKTOP_APPINFO_H
+#endif

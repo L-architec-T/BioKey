@@ -11,4 +11,4 @@ private:
   WinFirewallHelper() = default;
 };
 
-#endif // PCBU_DESKTOP_WINFIREWALLHELPER_H
+#endif

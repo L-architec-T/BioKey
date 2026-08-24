@@ -77,4 +77,4 @@ private:
   std::unique_ptr<UDPPairingBroadcaster> m_DiscoveryBeacon = nullptr;
 };
 
-#endif // PCBU_DESKTOP_PAIRINGFORM_H
+#endif

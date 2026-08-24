@@ -16,17 +16,14 @@ Form {
             Layout.fillHeight: true
             spacing: 12
 
-            // Common settings
             ColumnLayout {
                 Layout.alignment: Qt.AlignVCenter
                 spacing: 14
 
-                // General + Network
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 14
 
-                    // General
                     GroupBox {
                         id: generalGroup
                         Layout.fillWidth: true
@@ -41,7 +38,6 @@ Form {
                             anchors.top: parent.top
                             spacing: 6
 
-                            // Language
                             Label {
                                 text: '%1:'.arg(QI18n.Get('language'))
                             }
@@ -58,6 +54,10 @@ Form {
                                     ListElement {
                                         text: "English"
                                         val: "en"
+                                    }
+                                    ListElement {
+                                        text: "Français"
+                                        val: "fr"
                                     }
                                     ListElement {
                                         text: "Deutsch"
@@ -93,7 +93,6 @@ Form {
                                 }
                             }
 
-                            // Debug logging
                             CheckBox {
                                 id: debugLogCheckBox
                                 Layout.fillWidth: true
@@ -108,7 +107,6 @@ Form {
                         }
                     }
 
-                    // Network
                     GroupBox {
                         id: networkGroup
                         Layout.fillWidth: true
@@ -117,7 +115,6 @@ Form {
                         Layout.preferredHeight: networkCol.implicitHeight + topPadding + bottomPadding
                         title: QI18n.Get('network_settings')
 
-                        // Interface selection
                         ColumnLayout {
                             id: networkCol
                             anchors.left: parent.left
@@ -184,7 +181,6 @@ Form {
                     }
                 }
 
-                // Ports
                 GroupBox {
                     id: portsGroup
                     Layout.fillWidth: true
@@ -199,7 +195,6 @@ Form {
                         columnSpacing: 12
                         rowSpacing: 8
 
-                        // Pairing discovery port
                         ColumnLayout {
                             Layout.fillWidth: true
                             spacing: 2
@@ -218,7 +213,6 @@ Form {
                             }
                         }
 
-                        // Pairing port
                         ColumnLayout {
                             Layout.fillWidth: true
                             spacing: 2
@@ -237,7 +231,6 @@ Form {
                             }
                         }
 
-                        // Unlock port
                         ColumnLayout {
                             Layout.fillWidth: true
                             spacing: 2
@@ -270,7 +263,6 @@ Form {
                     }
                 }
 
-                // Connection
                 GroupBox {
                     id: connectionGroup
                     Layout.fillWidth: true
@@ -285,7 +277,6 @@ Form {
                         columnSpacing: 12
                         rowSpacing: 8
 
-                        // Connect timeout
                         ColumnLayout {
                             Layout.fillWidth: true
                             spacing: 2
@@ -316,7 +307,6 @@ Form {
                             }
                         }
 
-                        // Connect retries
                         ColumnLayout {
                             Layout.fillWidth: true
                             spacing: 2
@@ -347,7 +337,6 @@ Form {
                             }
                         }
 
-                        // Read/Write timeout
                         ColumnLayout {
                             Layout.fillWidth: true
                             spacing: 2
@@ -385,7 +374,6 @@ Form {
                 Layout.fillWidth: true
             }
 
-            // OS settings
             GroupBox {
                 id: serviceGroup
                 Layout.preferredHeight: serviceSettingsLayout.implicitHeight + topPadding + bottomPadding

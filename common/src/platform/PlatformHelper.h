@@ -33,11 +33,25 @@ public:
 
   static PlatformLoginStatus CheckLogin(const std::string &userName, const std::string &password);
 
+  static bool LockScreen();
+
+  static bool Suspend();
+
 #ifdef WINDOWS
   static bool SetDefaultCredProv(const std::string &userName, const std::string &provId);
+#endif
+
+#ifdef LINUX
+  static std::vector<std::string> GetGreeterUserOrder();
+
+  static bool SelectGreeterUser(int userIndex);
+
+  static bool IsValidMacroKeyName(const std::string &keyName);
+
+  static bool PlayMacro(const std::string &macroStepsJson);
 #endif
 private:
   PlatformHelper() = default;
 };
 
-#endif // PCBU_DESKTOP_PLATFORMHELPER_H
+#endif

@@ -18,6 +18,8 @@ LocaleHelper::Locale LocaleHelper::GetUserLocale() {
       return Locale::CHINESE_SIMPLIFIED;
     if(settingsLang == "de")
       return Locale::GERMAN;
+    if(settingsLang == "fr")
+      return Locale::FRENCH;
     if(settingsLang == "pt_PT")
       return Locale::PORTUGUESE_PT;
     if(settingsLang == "pt_BR")
@@ -68,6 +70,8 @@ LocaleHelper::Locale LocaleHelper::GetUserLocale() {
     return Locale::CHINESE_SIMPLIFIED;
   else if(locale.starts_with("de"))
     return Locale::GERMAN;
+  else if(locale.starts_with("fr"))
+    return Locale::FRENCH;
   else if(locale.starts_with("pt_pt"))
     return Locale::PORTUGUESE_PT;
   else if(locale.starts_with("pt_br"))
@@ -79,6 +83,8 @@ std::string LocaleHelper::ToString(Locale locale) {
   switch(locale) {
     case Locale::ENGLISH:
       return "English";
+    case Locale::FRENCH:
+      return "French";
     case Locale::GERMAN:
       return "German";
     case Locale::CHINESE_SIMPLIFIED:

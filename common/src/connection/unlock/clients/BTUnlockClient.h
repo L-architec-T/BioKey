@@ -22,4 +22,4 @@ private:
 };
 
 #endif
-#endif // PAM_PCBIOUNLOCK_BTUNLOCKCLIENT_H
+#endif

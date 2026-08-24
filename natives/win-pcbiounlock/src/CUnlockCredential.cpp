@@ -47,8 +47,6 @@ CUnlockCredential::~CUnlockCredential() {
   DllRelease();
 }
 
-// Initializes one credential with the field information passed in.
-// Set the value of the SFI_LARGE_TEXT field to pwzUsername.
 HRESULT CUnlockCredential::Initialize(CREDENTIAL_PROVIDER_USAGE_SCENARIO cpus, _In_ CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR const *rgcpfd,
                                       _In_ FIELD_STATE_PAIR const *rgfsp, _In_ ICredentialProviderUser *pcpUser, _In_ CSampleProvider *pProvider,
                                       _In_ const std::wstring &userDomain) {
@@ -60,14 +58,11 @@ HRESULT CUnlockCredential::Initialize(CREDENTIAL_PROVIDER_USAGE_SCENARIO cpus, _
   pcpUser->GetProviderID(&guidProvider);
   _fIsLocalUser = (guidProvider == Identity_LocalUserProvider);
 
-  // Copy the field descriptors for each field. This is useful if you want to vary the field
-  // descriptors based on what Usage scenario the credential was created for.
   for(DWORD i = 0; SUCCEEDED(hr) && i < ARRAYSIZE(_rgCredProvFieldDescriptors); i++) {
     _rgFieldStatePairs[i] = rgfsp[i];
     hr = FieldDescriptorCopy(rgcpfd[i], &_rgCredProvFieldDescriptors[i]);
   }
 
-  // Initialize the String value of all the fields.
   if(SUCCEEDED(hr)) {
     hr = pcpUser->GetStringValue(PKEY_Identity_QualifiedUserName, &_pszQualifiedUserName);
   }
@@ -140,7 +135,6 @@ void CUnlockCredential::UpdateMessage(const std::string &message) {
   CoTaskMemFree(messageCopy);
 }
 
-// LogonUI calls this in order to give us a callback in case we need to notify it of anything.
 HRESULT CUnlockCredential::Advise(_In_ ICredentialProviderCredentialEvents *pcpce) {
   ICredentialProviderCredentialEvents2 *events = nullptr;
   PWSTR messageCopy = nullptr;
@@ -165,7 +159,6 @@ HRESULT CUnlockCredential::Advise(_In_ ICredentialProviderCredentialEvents *pcpc
   return result;
 }
 
-// LogonUI calls this to tell us to release the callback.
 HRESULT CUnlockCredential::UnAdvise() {
   std::lock_guard<std::mutex> lock(_mutex);
   if(_pCredProvCredentialEvents) {
@@ -175,12 +168,6 @@ HRESULT CUnlockCredential::UnAdvise() {
   return S_OK;
 }
 
-// LogonUI calls this function when our tile is selected (zoomed)
-// If you simply want fields to show/hide based on the selected state,
-// there's no need to do anything here - you can set that up in the
-// field definitions. But if you want to do something
-// more complicated, like change the contents of a field when the tile is
-// selected, you would do it here.
 HRESULT CUnlockCredential::SetSelected(_Out_ BOOL *pbAutoLogon) {
   _isSelected = true;
   if(_pUnlockListener != nullptr) {
@@ -190,9 +177,6 @@ HRESULT CUnlockCredential::SetSelected(_Out_ BOOL *pbAutoLogon) {
   return S_OK;
 }
 
-// Similarly to SetSelected, LogonUI calls this when your tile was selected
-// and now no longer is. The most common thing to do here (which we do below)
-// is to clear out the password field.
 HRESULT CUnlockCredential::SetDeselected() {
   _isSelected = false;
   if(_pUnlockListener != nullptr) {
@@ -213,12 +197,9 @@ HRESULT CUnlockCredential::SetDeselected() {
   return hr;
 }
 
-// Get info for a particular field of a tile. Called by logonUI to get information
-// to display the tile.
 HRESULT CUnlockCredential::GetFieldState(DWORD dwFieldID, _Out_ CREDENTIAL_PROVIDER_FIELD_STATE *pcpfs,
                                          _Out_ CREDENTIAL_PROVIDER_FIELD_INTERACTIVE_STATE *pcpfis) {
   HRESULT hr;
-  // Validate our parameters.
   if((dwFieldID < ARRAYSIZE(_rgFieldStatePairs))) {
     UnlockState unlockState;
     {
@@ -243,15 +224,11 @@ HRESULT CUnlockCredential::GetFieldState(DWORD dwFieldID, _Out_ CREDENTIAL_PROVI
   return hr;
 }
 
-// Sets ppwsz to the string value of the field at the index dwFieldID
 HRESULT CUnlockCredential::GetStringValue(DWORD dwFieldID, _Outptr_result_nullonfailure_ PWSTR *ppwsz) {
   HRESULT hr;
   *ppwsz = nullptr;
 
-  // Check to make sure dwFieldID is a legitimate index
   if(dwFieldID < ARRAYSIZE(_rgCredProvFieldDescriptors)) {
-    // Make a copy of the string and return that. The caller
-    // is responsible for freeing it.
     std::lock_guard<std::mutex> lock(_mutex);
     hr = SHStrDupW(_rgFieldStrings[dwFieldID], ppwsz);
   } else {
@@ -261,7 +238,6 @@ HRESULT CUnlockCredential::GetStringValue(DWORD dwFieldID, _Outptr_result_nullon
   return hr;
 }
 
-// Get the image to show in the user tile
 HRESULT CUnlockCredential::GetBitmapValue(DWORD dwFieldID, _Outptr_result_nullonfailure_ HBITMAP *phbmp) {
   HRESULT hr;
   *phbmp = nullptr;
@@ -295,16 +271,10 @@ HRESULT CUnlockCredential::GetBitmapValue(DWORD dwFieldID, _Outptr_result_nullon
   return hr;
 }
 
-// Sets pdwAdjacentTo to the index of the field the submit button should be
-// adjacent to. We recommend that the submit button is placed next to the last
-// field which the user is required to enter information in. Optional fields
-// should be below the submit button.
 HRESULT CUnlockCredential::GetSubmitButtonValue(DWORD dwFieldID, _Out_ DWORD *pdwAdjacentTo) {
   HRESULT hr;
 
   if(SFI_SUBMIT_BUTTON == dwFieldID) {
-    // pdwAdjacentTo is a pointer to the fieldID you want the submit button to
-    // appear next to.
     *pdwAdjacentTo = SFI_PASSWORD;
     hr = S_OK;
   } else {
@@ -313,12 +283,9 @@ HRESULT CUnlockCredential::GetSubmitButtonValue(DWORD dwFieldID, _Out_ DWORD *pd
   return hr;
 }
 
-// Sets the value of a field which can accept a string as a value.
-// This is called on each keystroke when a user types into an edit field
 HRESULT CUnlockCredential::SetStringValue(DWORD dwFieldID, _In_ PCWSTR pwz) {
   HRESULT hr;
 
-  // Validate parameters.
   if(dwFieldID < ARRAYSIZE(_rgCredProvFieldDescriptors) &&
      (CPFT_EDIT_TEXT == _rgCredProvFieldDescriptors[dwFieldID].cpft || CPFT_PASSWORD_TEXT == _rgCredProvFieldDescriptors[dwFieldID].cpft)) {
     std::lock_guard<std::mutex> lock(_mutex);
@@ -332,7 +299,6 @@ HRESULT CUnlockCredential::SetStringValue(DWORD dwFieldID, _In_ PCWSTR pwz) {
   return hr;
 }
 
-// Our credential doesn't have any checkable boxes.
 HRESULT CUnlockCredential::GetCheckboxValue(__in DWORD dwFieldID, __out BOOL *pbChecked, __deref_out PWSTR *ppwszLabel) {
   UNREFERENCED_PARAMETER(dwFieldID);
   UNREFERENCED_PARAMETER(pbChecked);
@@ -340,14 +306,12 @@ HRESULT CUnlockCredential::GetCheckboxValue(__in DWORD dwFieldID, __out BOOL *pb
   return E_NOTIMPL;
 }
 
-// Our credential doesn't have a checkbox.
 HRESULT CUnlockCredential::SetCheckboxValue(__in DWORD dwFieldID, __in BOOL bChecked) {
   UNREFERENCED_PARAMETER(dwFieldID);
   UNREFERENCED_PARAMETER(bChecked);
   return E_NOTIMPL;
 }
 
-// Our credential doesn't have a combobox.
 HRESULT CUnlockCredential::GetComboBoxValueCount(DWORD dwFieldID, _Out_ DWORD *pcItems, _Deref_out_range_(<, *pcItems) _Out_ DWORD *pdwSelectedItem) {
   UNREFERENCED_PARAMETER(dwFieldID);
   UNREFERENCED_PARAMETER(pcItems);
@@ -355,7 +319,6 @@ HRESULT CUnlockCredential::GetComboBoxValueCount(DWORD dwFieldID, _Out_ DWORD *p
   return E_NOTIMPL;
 }
 
-// Our credential doesn't have a combobox.
 HRESULT CUnlockCredential::GetComboBoxValueAt(__in DWORD dwFieldID, __out DWORD dwItem, __deref_out PWSTR *ppwszItem) {
   UNREFERENCED_PARAMETER(dwFieldID);
   UNREFERENCED_PARAMETER(dwItem);
@@ -363,14 +326,12 @@ HRESULT CUnlockCredential::GetComboBoxValueAt(__in DWORD dwFieldID, __out DWORD 
   return E_NOTIMPL;
 }
 
-// Our credential doesn't have a combobox.
 HRESULT CUnlockCredential::SetComboBoxSelectedValue(__in DWORD dwFieldId, __in DWORD dwSelectedItem) {
   UNREFERENCED_PARAMETER(dwFieldId);
   UNREFERENCED_PARAMETER(dwSelectedItem);
   return E_NOTIMPL;
 }
 
-// Our credential doesn't have a command link.
 HRESULT CUnlockCredential::CommandLinkClicked(__in DWORD dwFieldID) {
   HRESULT hr;
   if(dwFieldID == SFI_RETRY_BUTTON) {
@@ -392,9 +353,6 @@ HRESULT CUnlockCredential::CommandLinkClicked(__in DWORD dwFieldID) {
   return hr;
 }
 
-// Collect the username and password into a serialized credential for the correct usage scenario
-// (logon/unlock is what's demonstrated in this sample).  LogonUI then passes these credentials
-// back to the system to log on.
 HRESULT CUnlockCredential::GetSerialization(_Out_ CREDENTIAL_PROVIDER_GET_SERIALIZATION_RESPONSE *pcpgsr,
                                             _Out_ CREDENTIAL_PROVIDER_CREDENTIAL_SERIALIZATION *pcpcs,
                                             _Outptr_result_maybenull_ PWSTR *ppwszOptionalStatusText,
@@ -405,7 +363,6 @@ HRESULT CUnlockCredential::GetSerialization(_Out_ CREDENTIAL_PROVIDER_GET_SERIAL
   *pcpsiOptionalStatusIcon = CPSI_NONE;
   ZeroMemory(pcpcs, sizeof(*pcpcs));
 
-  // Check for password or unlock success
   std::wstring pwd;
   {
     std::lock_guard<std::mutex> lock(_mutex);
@@ -419,8 +376,6 @@ HRESULT CUnlockCredential::GetSerialization(_Out_ CREDENTIAL_PROVIDER_GET_SERIAL
     }
   }
 
-  // For local user, the domain and user name can be split from _pszQualifiedUserName (domain\username).
-  // CredPackAuthenticationBuffer() cannot be used because it won't work with unlock scenario.
   if(_fIsLocalUser) {
     PWSTR pwzProtectedPassword;
     hr = ProtectIfNecessaryAndCopyPassword(pwd.c_str(), _cpus, &pwzProtectedPassword);
@@ -432,9 +387,6 @@ HRESULT CUnlockCredential::GetSerialization(_Out_ CREDENTIAL_PROVIDER_GET_SERIAL
         KERB_INTERACTIVE_UNLOCK_LOGON kiul;
         hr = KerbInteractiveUnlockLogonInit(pszDomain, pszUsername, pwzProtectedPassword, _cpus, &kiul);
         if(SUCCEEDED(hr)) {
-          // We use KERB_INTERACTIVE_UNLOCK_LOGON in both unlock and logon scenarios.  It contains a
-          // KERB_INTERACTIVE_LOGON to hold the creds plus a LUID that is filled in for us by Winlogon
-          // as necessary.
           hr = KerbInteractiveUnlockLogonPack(kiul, &pcpcs->rgbSerialization, &pcpcs->cbSerialization);
           if(SUCCEEDED(hr)) {
             ULONG ulAuthPackage;
@@ -442,10 +394,6 @@ HRESULT CUnlockCredential::GetSerialization(_Out_ CREDENTIAL_PROVIDER_GET_SERIAL
             if(SUCCEEDED(hr)) {
               pcpcs->ulAuthenticationPackage = ulAuthPackage;
               pcpcs->clsidCredentialProvider = CLSID_CSample;
-              // At this point the credential has created the serialized credential used for logon
-              // By setting this to CPGSR_RETURN_CREDENTIAL_FINISHED we are letting logonUI know
-              // that we have all the information we need and it should attempt to submit the
-              // serialized credential.
               *pcpgsr = CPGSR_RETURN_CREDENTIAL_FINISHED;
             }
           }
@@ -458,14 +406,12 @@ HRESULT CUnlockCredential::GetSerialization(_Out_ CREDENTIAL_PROVIDER_GET_SERIAL
   } else {
     DWORD dwAuthFlags = CRED_PACK_PROTECTED_CREDENTIALS | CRED_PACK_ID_PROVIDER_CREDENTIALS;
 
-    // First get the size of the authentication buffer to allocate
     if(!CredPackAuthenticationBufferW(dwAuthFlags, _pszQualifiedUserName, const_cast<PWSTR>(pwd.c_str()), nullptr, &pcpcs->cbSerialization) &&
        (GetLastError() == ERROR_INSUFFICIENT_BUFFER)) {
       pcpcs->rgbSerialization = static_cast<byte *>(CoTaskMemAlloc(pcpcs->cbSerialization));
       if(pcpcs->rgbSerialization != nullptr) {
         hr = S_OK;
 
-        // Retrieve the authentication buffer
         if(CredPackAuthenticationBufferW(dwAuthFlags, _pszQualifiedUserName, const_cast<PWSTR>(pwd.c_str()), pcpcs->rgbSerialization,
                                          &pcpcs->cbSerialization)) {
           ULONG ulAuthPackage;
@@ -474,10 +420,6 @@ HRESULT CUnlockCredential::GetSerialization(_Out_ CREDENTIAL_PROVIDER_GET_SERIAL
             pcpcs->ulAuthenticationPackage = ulAuthPackage;
             pcpcs->clsidCredentialProvider = CLSID_CSample;
 
-            // At this point the credential has created the serialized credential used for logon
-            // By setting this to CPGSR_RETURN_CREDENTIAL_FINISHED we are letting logonUI know
-            // that we have all the information we need and it should attempt to submit the
-            // serialized credential.
             *pcpgsr = CPGSR_RETURN_CREDENTIAL_FINISHED;
           }
         } else {
@@ -505,10 +447,6 @@ struct REPORT_RESULT_STATUS_INFO {
   CREDENTIAL_PROVIDER_STATUS_ICON cpsi;
 };
 
-// ReportResult is completely optional.  Its purpose is to allow a credential to customize the string
-// and the icon displayed in the case of a logon failure.  For example, we have chosen to
-// customize the error shown in the case of bad username/password and in the case of the account
-// being disabled.
 HRESULT CUnlockCredential::ReportResult(NTSTATUS ntsStatus, NTSTATUS ntsSubstatus, _Outptr_result_maybenull_ PWSTR *ppwszOptionalStatusText,
                                         _Out_ CREDENTIAL_PROVIDER_STATUS_ICON *pcpsiOptionalStatusIcon) {
   *ppwszOptionalStatusText = nullptr;
@@ -529,7 +467,6 @@ HRESULT CUnlockCredential::ReportResult(NTSTATUS ntsStatus, NTSTATUS ntsSubstatu
   }
   DWORD dwStatusInfo = (DWORD)-1;
 
-  // Look for a match on status and substatus.
   for(DWORD i = 0; i < ARRAYSIZE(rgLogonStatusInfo); i++) {
     if(rgLogonStatusInfo[i].ntsStatus == ntsStatus && rgLogonStatusInfo[i].ntsSubstatus == ntsSubstatus) {
       dwStatusInfo = i;
@@ -543,32 +480,25 @@ HRESULT CUnlockCredential::ReportResult(NTSTATUS ntsStatus, NTSTATUS ntsSubstatu
     }
   }
 
-  // If we failed the logon, try to erase the password field.
   if(FAILED(HRESULT_FROM_NT(ntsStatus))) {
     if(_pCredProvCredentialEvents) {
       _pCredProvCredentialEvents->SetFieldString(this, SFI_PASSWORD, L"");
     }
   }
 
-  // Since nullptr is a valid value for *ppwszOptionalStatusText and *pcpsiOptionalStatusIcon
-  // this function can't fail.
   return S_OK;
 }
 
-// Gets the SID of the user corresponding to the credential.
 HRESULT CUnlockCredential::GetUserSid(_Outptr_result_nullonfailure_ PWSTR *ppszSid) {
   *ppszSid = nullptr;
   HRESULT hr = E_UNEXPECTED;
   if(_pszUserSid != nullptr) {
     hr = SHStrDupW(_pszUserSid, ppszSid);
   }
-  // Return S_FALSE with a null SID in ppszSid for the
-  // credential to be associated with an empty user tile.
 
   return hr;
 }
 
-// GetFieldOptions to enable the password reveal button and touch keyboard auto-invoke in the password field.
 HRESULT CUnlockCredential::GetFieldOptions(DWORD dwFieldID, _Out_ CREDENTIAL_PROVIDER_CREDENTIAL_FIELD_OPTIONS *pcpcfo) {
   *pcpcfo = CPCFO_NONE;
 

@@ -146,7 +146,7 @@ int BluetoothHelper::FindSDPChannel(const std::string &deviceAddr, uint8_t *uuid
   return channel;
 }
 
-std::optional<SDPService> BluetoothHelper::RegisterSDPService(uint8_t channel) { // ToDo: More error checks
+std::optional<SDPService> BluetoothHelper::RegisterSDPService(uint8_t channel) {
   static uint8_t CHANNEL_UUID[16] = {0x62, 0x18, 0x2b, 0xf7, 0x97, 0xc8, 0x45, 0xf9, 0xaa, 0x2c, 0x53, 0xc5, 0xf2, 0x00, 0x8b, 0xdf};
   uuid_t rootUUID{}, l2capUUID{}, rfcommUUID{}, svcUUID{};
   sdp_list_t *l2capList{}, *rfcommList{}, *rootList{}, *protoList{}, *accessProtoList{};
@@ -172,7 +172,7 @@ std::optional<SDPService> BluetoothHelper::RegisterSDPService(uint8_t channel) {
 
   accessProtoList = sdp_list_append(nullptr, protoList);
   sdp_set_access_protos(record, accessProtoList);
-  sdp_set_info_attr(record, "PC Bio Unlock BT", "", "");
+  sdp_set_info_attr(record, "BioKey BT", "", "");
 
   bdaddr_t local = {{0, 0, 0, 0xff, 0xff, 0xff}};
   bdaddr_t localAny = {{0, 0, 0, 0, 0, 0}};

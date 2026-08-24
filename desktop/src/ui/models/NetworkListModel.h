@@ -35,4 +35,4 @@ private:
   QVector<NetworkListItem> m_ListData{};
 };
 
-#endif // PCBU_DESKTOP_NETWORKLISTMODEL_H
+#endif

@@ -68,3 +68,22 @@ PlatformLoginStatus PlatformHelper::CheckLogin(const std::string &userName, cons
 bool PlatformHelper::HasNativeLibrary(const std::string &libName) {
   return false;
 }
+
+bool PlatformHelper::LockScreen() {
+  static constexpr auto CG_SESSION_PATH = "/System/Library/CoreServices/Menu Extras/User.menu/Contents/Resources/CGSession";
+  auto result = Shell::RunUserCommand(std::string(CG_SESSION_PATH) + " -suspend");
+  if(result.exitCode != 0) {
+    spdlog::error("CGSession -suspend failed (exit={}): {}", result.exitCode, result.output);
+    return false;
+  }
+  return true;
+}
+
+bool PlatformHelper::Suspend() {
+  auto result = Shell::RunCommand("pmset sleepnow");
+  if(result.exitCode != 0) {
+    spdlog::error("pmset sleepnow failed (exit={}): {}", result.exitCode, result.output);
+    return false;
+  }
+  return true;
+}

@@ -227,6 +227,23 @@ PlatformLoginStatus PlatformHelper::CheckLogin(const std::string &userName, cons
   }
 }
 
+bool PlatformHelper::LockScreen() {
+  if(!LockWorkStation()) {
+    spdlog::error("LockWorkStation() failed. (Code={})", GetLastError());
+    return false;
+  }
+  return true;
+}
+
+bool PlatformHelper::Suspend() {
+  auto result = Shell::RunCommand("rundll32.exe powrprof.dll,SetSuspendState 0,1,0");
+  if(result.exitCode != 0) {
+    spdlog::error("SetSuspendState via rundll32 failed (exit={}): {}", result.exitCode, result.output);
+    return false;
+  }
+  return true;
+}
+
 bool PlatformHelper::SetDefaultCredProv(const std::string &userName, const std::string &provId) {
   auto userSid = PlatformHelper_GetSidFromUserName(userName);
   if(userSid.empty())

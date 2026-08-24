@@ -62,6 +62,17 @@ void PairedDevicesStorage::RemoveDevice(const std::string &id) {
   PairedDevicesStorage::SaveDevices(devices);
 }
 
+void PairedDevicesStorage::SetMacroSteps(const std::string &id, const std::string &macroStepsJson) {
+  auto devices = PairedDevicesStorage::GetDevices();
+  for(auto &device : devices) {
+    if(device.id == id) {
+      device.macroStepsJson = macroStepsJson;
+      break;
+    }
+  }
+  PairedDevicesStorage::SaveDevices(devices);
+}
+
 std::vector<PairedDevice> PairedDevicesStorage::GetDevices() {
   std::vector<PairedDevice> result{};
   try {
@@ -89,6 +100,7 @@ std::vector<PairedDevice> PairedDevicesStorage::GetDevices() {
       device.tcpPort = entry["tcpPort"];
       device.udpPort = entry["udpPort"];
       device.udpManualPort = entry["udpManualPort"];
+      device.macroStepsJson = entry.value("macroStepsJson", "");
       result.emplace_back(device);
     }
   } catch(const std::exception &ex) {
@@ -116,7 +128,8 @@ void PairedDevicesStorage::SaveDevices(const std::vector<PairedDevice> &devices)
                                    {"udpPort", device.udpPort},
                                    {"udpManualPort", device.udpManualPort},
                                    {"bluetoothAddress", device.bluetoothAddress},
-                                   {"cloudToken", device.cloudToken}};
+                                   {"cloudToken", device.cloudToken},
+                                   {"macroStepsJson", device.macroStepsJson}};
       devicesJson.emplace_back(deviceJson);
     }
     auto baseDir = AppSettings::GetBaseDir();

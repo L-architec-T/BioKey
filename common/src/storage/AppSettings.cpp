@@ -55,6 +55,7 @@ PCBUAppStorage AppSettings::Load() {
     settings.pairingDiscoveryPort = json.value("pairingDiscoveryPort", 43297);
     settings.pairingServerPort = json["pairingServerPort"];
     settings.unlockServerPort = json["unlockServerPort"];
+    settings.lockListenPort = json.value("lockListenPort", 43298);
     settings.clientSocketTimeout = json["clientSocketTimeout"];
     settings.clientConnectTimeout = json["clientConnectTimeout"];
     settings.clientConnectRetries = json["clientConnectRetries"];
@@ -78,6 +79,7 @@ PCBUAppStorage AppSettings::Load() {
     def.pairingDiscoveryPort = 43297;
     def.pairingServerPort = 43295;
     def.unlockServerPort = 43296;
+    def.lockListenPort = 43298;
     def.clientSocketTimeout = 120;
     def.clientConnectTimeout = 5;
     def.clientConnectRetries = 2;
@@ -105,6 +107,7 @@ void AppSettings::Save(const PCBUAppStorage &storage) {
         {"pairingDiscoveryPort", storage.pairingDiscoveryPort},
         {"pairingServerPort", storage.pairingServerPort},
         {"unlockServerPort", storage.unlockServerPort},
+        {"lockListenPort", storage.lockListenPort},
         {"clientSocketTimeout", storage.clientSocketTimeout},
         {"clientConnectTimeout", storage.clientConnectTimeout},
         {"clientConnectRetries", storage.clientConnectRetries},

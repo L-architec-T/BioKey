@@ -15,4 +15,4 @@ private:
   I18n() = default;
 };
 
-#endif // I18N_H
+#endif

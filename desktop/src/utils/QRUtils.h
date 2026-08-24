@@ -11,4 +11,4 @@ private:
   QRUtils() = default;
 };
 
-#endif // PCBU_DESKTOP_QRUTILS_H
+#endif

@@ -7,6 +7,7 @@ class LocaleHelper {
 public:
   enum class Locale {
     ENGLISH,
+    FRENCH,
     GERMAN,
     CHINESE_SIMPLIFIED,
     PORTUGUESE_PT,

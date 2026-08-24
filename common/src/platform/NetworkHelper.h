@@ -35,4 +35,4 @@ private:
   static bool IsWiredEthernet(const std::string &ifName);
 };
 
-#endif // PCBU_DESKTOP_NETWORKHELPER_H
+#endif

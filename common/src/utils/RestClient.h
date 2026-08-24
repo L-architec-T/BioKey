@@ -12,4 +12,4 @@ private:
   RestClient() = default;
 };
 
-#endif // PCBU_DESKTOP_RESTCLIENT_H
+#endif

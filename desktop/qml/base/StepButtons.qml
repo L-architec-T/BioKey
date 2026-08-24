@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Controls.Material
 import QtQuick.Layouts
 import PCBioUnlock
 
@@ -21,6 +22,7 @@ Rectangle {
     RowLayout {
         anchors.fill: parent
         Button {
+            Material.roundedScale: Material.SmallScale
             Layout.minimumWidth: 100
             Layout.minimumHeight: 50
             id: stepButtonBack
@@ -28,6 +30,7 @@ Rectangle {
             onClicked: stepButtonsRect.backClicked()
         }
         Button {
+            Material.roundedScale: Material.SmallScale
             Layout.minimumWidth: 100
             Layout.minimumHeight: 50
             Layout.alignment: Qt.AlignRight

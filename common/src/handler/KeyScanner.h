@@ -31,4 +31,4 @@ private:
 #endif
 };
 
-#endif // PAM_PCBIOUNLOCK_KEYSCANNER_H
+#endif

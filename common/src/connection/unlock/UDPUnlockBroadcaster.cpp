@@ -5,7 +5,7 @@
 
 constexpr int INTERVAL_MS = 2000;
 
-UDPUnlockBroadcaster::UDPUnlockBroadcaster() : UDPBroadcaster("UDPUnlockBroadcaster", INTERVAL_MS) {
+UDPUnlockBroadcaster::UDPUnlockBroadcaster(std::string wakeId) : UDPBroadcaster("UDPUnlockBroadcaster", INTERVAL_MS), m_WakeId(std::move(wakeId)) {
   m_UnlockPort = AppSettings::Get().unlockServerPort;
 }
 
@@ -24,6 +24,7 @@ void UDPUnlockBroadcaster::SendToTarget(const BroadcastTarget &target) {
     packet.pcbuIP = target.sourceIP;
     packet.pcbuPort = m_UnlockPort;
     packet.isManual = device.isManual;
+    packet.wakeId = m_WakeId;
     auto payload = packet.ToJson().dump();
     SendBroadcast(target, {payload.begin(), payload.end()}, device.devicePort);
   }

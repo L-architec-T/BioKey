@@ -61,7 +61,6 @@ void BTUnlockClient::ConnectThread() {
   address.serviceClassId = guid;
   address.btAddr = addr;
 #elif LINUX
-  // 62182bf7-97c8-45f9-aa2c-53c5f2008bdf
   static uint8_t CHANNEL_UUID[16] = {0x62, 0x18, 0x2b, 0xf7, 0x97, 0xc8, 0x45, 0xf9, 0xaa, 0x2c, 0x53, 0xc5, 0xf2, 0x00, 0x8b, 0xdf};
 
   m_Channel = BluetoothHelper::FindSDPChannel(m_DeviceAddress, CHANNEL_UUID);

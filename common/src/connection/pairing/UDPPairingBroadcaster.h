@@ -21,4 +21,4 @@ private:
   uint16_t m_DiscoveryPort;
 };
 
-#endif // PCBU_DESKTOP_UDPPAIRINGBROADCASTER_H
+#endif

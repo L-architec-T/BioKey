@@ -89,7 +89,6 @@ PairingStep PairingForm::GetNextStep() {
 }
 
 void PairingForm::UpdateStepForm(QObject *viewLoader, QObject *window) {
-  // Pairing server
   if(m_CurrentStep == PairingStep::QR_SCAN) {
     if(m_PairingServer) {
       m_PairingServer->Stop();
@@ -100,7 +99,10 @@ void PairingForm::UpdateStepForm(QObject *viewLoader, QObject *window) {
       m_DiscoveryBeacon.reset();
     }
     m_PairingServer = std::make_unique<PairingServer>(
-        [window](const std::string &error) { QMetaObject::invokeMethod(window, "showErrorMessage", Q_ARG(QVariant, QString::fromUtf8(error))); });
+        [window](const std::string &error) { QMetaObject::invokeMethod(window, "showErrorMessage", Q_ARG(QVariant, QString::fromUtf8(error))); },
+        [this, viewLoader, window]() {
+          QMetaObject::invokeMethod(this, "OnNextClicked", Q_ARG(QObject *, viewLoader), Q_ARG(QObject *, window));
+        });
 
     m_ServerId = StringUtils::RandomString(8);
     m_EncKey = StringUtils::RandomString(64);
@@ -130,13 +132,11 @@ void PairingForm::UpdateStepForm(QObject *viewLoader, QObject *window) {
     }
   }
 
-  // Set default pairing method
   if(m_CurrentStep == PairingStep::METHOD_SELECT) {
     auto defaultMethod = m_PairingData.pairingMethodType == "AUTO" ? PairingMethod::UDP : PairingMethod::MANUAL_UDP;
     m_PairingData.pairingMethod = QString::fromUtf8(PairingMethodUtils::ToString(defaultMethod));
   }
 
-  // Bluetooth scanner
   if(m_CurrentStep == PairingStep::BLUETOOTH_DEVICE_SELECT) {
     if(m_BluetoothScanThread.joinable())
       m_BluetoothScanThread.join();
@@ -162,7 +162,6 @@ void PairingForm::UpdateStepForm(QObject *viewLoader, QObject *window) {
     m_IsBluetoothScanRunning = false;
   }
 
-  // Bluetooth pairing
   if(m_CurrentStep == PairingStep::BLUETOOTH_PAIRING) {
     auto device = BluetoothDevice();
     device.address = m_PairingData.bluetoothAddress.toStdString();

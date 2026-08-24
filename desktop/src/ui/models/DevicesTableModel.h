@@ -23,4 +23,4 @@ private:
   QVector<QVector<QString>> m_TableData{};
 };
 
-#endif // PCBU_DESKTOP_DEVICESTABLEMODEL_H
+#endif

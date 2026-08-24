@@ -17,4 +17,4 @@ private:
   std::thread m_LoadThread{};
 };
 
-#endif // PCBU_DESKTOP_LOGSWINDOW_H
+#endif

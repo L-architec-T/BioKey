@@ -93,6 +93,7 @@ int main(int argc, char *argv[]) {
     return -1;
   }
   LoggingSystem::Init("module", false);
+  spdlog::info("pcbu_auth starting (built {} {}).", __DATE__, __TIME__);
   auto result = runMain(argc, argv);
   LoggingSystem::Destroy();
   return result;

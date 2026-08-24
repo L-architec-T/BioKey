@@ -32,4 +32,4 @@ private:
   Shell() = default;
 };
 
-#endif // PCBU_DESKTOP_SHELL_H
+#endif
