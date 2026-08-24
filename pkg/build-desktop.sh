@@ -117,6 +117,7 @@ elif [[ "$PLATFORM" == "linux" ]]; then
   ./linuxdeploy-plugin-qt-"$LINUX_ARCH".AppImage --appdir appimage_dir
   rm ./linuxdeploy-plugin-qt-"$LINUX_ARCH".AppImage
   ./linuxdeploy-"$LINUX_ARCH".AppImage --appdir appimage_dir --plugin checkrt --output appimage --desktop-file ../linux/PCBioUnlock.desktop
+  rm ./linuxdeploy-"$LINUX_ARCH".AppImage
   mv ./*.AppImage PCBioUnlock.AppImage
   chmod +x PCBioUnlock.AppImage
 elif [[ "$PLATFORM" == "mac" ]]; then
