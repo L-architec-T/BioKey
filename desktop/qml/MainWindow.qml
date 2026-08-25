@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Controls.Material
+import QtQuick.Effects
 import QtQuick.Layouts
 import QtQuick.Window
 import QtQuick.Dialogs
@@ -8,13 +9,14 @@ import PCBioUnlock
 
 ApplicationWindow {
     id: window
-    width: 1150
-    height: 720
-    minimumWidth: 1150
-    minimumHeight: 720
+    width: 1250
+    height: 800
+    minimumWidth: 1250
+    minimumHeight: 800
     visible: true
     title: 'BioKey'
     color: '#181818'
+    Material.accent: AppTheme.accentColor
     Material.roundedScale: Material.SmallScale
 
     property bool canClose: true
@@ -26,11 +28,22 @@ ApplicationWindow {
         RowLayout {
             id: title
             spacing: 12
-            Image {
-                source: 'qrc:/res/icons/icon.png'
+            Item {
                 Layout.preferredWidth: 60
                 Layout.preferredHeight: 60
-                fillMode: Image.PreserveAspectFit
+                Image {
+                    id: appLogoSource
+                    anchors.fill: parent
+                    source: 'qrc:/res/icons/icon.png'
+                    fillMode: Image.PreserveAspectFit
+                    visible: false
+                }
+                MultiEffect {
+                    anchors.fill: appLogoSource
+                    source: appLogoSource
+                    colorization: 1.0
+                    colorizationColor: AppTheme.accentColor
+                }
             }
             Label {
                 text: 'BioKey'

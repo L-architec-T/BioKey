@@ -96,7 +96,7 @@ if [[ "$PLATFORM" == "win" ]]; then
   fi
 
   iscc ../win/installer.iss
-  mv mysetup.exe PCBioUnlock-Setup-"$ARCH".exe
+  mv mysetup.exe BioKey-Setup-"$ARCH".exe
 elif [[ "$PLATFORM" == "linux" ]]; then
   wget "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-$LINUX_ARCH.AppImage" && chmod +x ./linuxdeploy-"$LINUX_ARCH".AppImage
   wget "https://github.com/darealshinji/linuxdeploy-plugin-checkrt/releases/download/continuous/linuxdeploy-plugin-checkrt.sh" && chmod +x ./linuxdeploy-plugin-checkrt.sh
@@ -118,8 +118,8 @@ elif [[ "$PLATFORM" == "linux" ]]; then
   rm ./linuxdeploy-plugin-qt-"$LINUX_ARCH".AppImage
   ./linuxdeploy-"$LINUX_ARCH".AppImage --appdir appimage_dir --plugin checkrt --output appimage --desktop-file ../linux/PCBioUnlock.desktop
   rm ./linuxdeploy-"$LINUX_ARCH".AppImage
-  mv ./*.AppImage PCBioUnlock.AppImage
-  chmod +x PCBioUnlock.AppImage
+  mv ./*.AppImage BioKey.AppImage
+  chmod +x BioKey.AppImage
 elif [[ "$PLATFORM" == "mac" ]]; then
   "$QT_BASE_DIR/macos/bin/macdeployqt" desktop/pcbu_desktop.app -qmldir=../../desktop/qml
   find "desktop/pcbu_desktop.app" -type f -perm +111 | while read -r file; do
@@ -129,7 +129,7 @@ elif [[ "$PLATFORM" == "mac" ]]; then
 
   rm -Rf dmg_dir/ || true
   mkdir -p dmg_dir/ || true
-  cp -R desktop/pcbu_desktop.app dmg_dir/PCBioUnlock.app
+  cp -R desktop/pcbu_desktop.app dmg_dir/BioKey.app
   ln -s /Applications dmg_dir/Applications
 
   if [[ "$CI_BUILD" == "1" ]]; then
@@ -138,5 +138,5 @@ elif [[ "$PLATFORM" == "mac" ]]; then
     echo "Waiting for XProtect..."
     while pgrep XProtect; do sleep 3; done
   fi
-  hdiutil create -volname "BioKey" -srcfolder dmg_dir/ -ov -format UDZO ./PCBioUnlock-"$ARCH".dmg
+  hdiutil create -volname "BioKey" -srcfolder dmg_dir/ -ov -format UDZO ./BioKey-"$ARCH".dmg
 fi

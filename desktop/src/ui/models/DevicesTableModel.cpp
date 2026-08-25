@@ -13,7 +13,7 @@ DevicesTableModel::DevicesTableModel(QObject *parent) : QAbstractTableModel(pare
 }
 
 Q_INVOKABLE QVector<QString> DevicesTableModel::get(int rowIdx) {
-  if(rowIdx >= m_TableData.at(0).size())
+  if(rowIdx < 0 || rowIdx >= m_TableData.size())
     return {};
   return m_TableData.at(rowIdx);
 }

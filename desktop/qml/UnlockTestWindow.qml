@@ -19,6 +19,7 @@ ApplicationWindow {
     title: QI18n.Get('unlock_test')
     flags: Qt.Dialog
     modality: Qt.ApplicationModal
+    Material.accent: AppTheme.accentColor
 
     ColumnLayout {
         anchors.fill: parent

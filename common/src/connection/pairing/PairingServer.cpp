@@ -126,7 +126,7 @@ threadEnd:
   SOCKET_CLOSE(m_ServerSocket);
   for(auto &thread : clientThreads)
     if(thread.joinable())
-      thread.join();
+      thread.detach();
   m_IsRunning = false;
   spdlog::info("TCP pairing server stopped.");
 }

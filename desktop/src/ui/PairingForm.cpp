@@ -101,7 +101,7 @@ void PairingForm::UpdateStepForm(QObject *viewLoader, QObject *window) {
     m_PairingServer = std::make_unique<PairingServer>(
         [window](const std::string &error) { QMetaObject::invokeMethod(window, "showErrorMessage", Q_ARG(QVariant, QString::fromUtf8(error))); },
         [this, viewLoader, window]() {
-          QMetaObject::invokeMethod(this, "OnNextClicked", Q_ARG(QObject *, viewLoader), Q_ARG(QObject *, window));
+          QMetaObject::invokeMethod(this, "OnNextClicked", Qt::QueuedConnection, Q_ARG(QObject *, viewLoader), Q_ARG(QObject *, window));
         });
 
     m_ServerId = StringUtils::RandomString(8);
@@ -291,5 +291,10 @@ void PairingForm::OnNextClicked(QObject *viewLoader, QObject *window) {
   if(m_CurrentStep != PairingStep::NONE && m_CurrentStep != PairingStep::BLUETOOTH_PAIRING)
     m_StepStack.push(m_CurrentStep);
   m_CurrentStep = nextStep;
-  UpdateStepForm(viewLoader, window);
+  try {
+    UpdateStepForm(viewLoader, window);
+  } catch(const std::exception &ex) {
+    spdlog::error("Exception during pairing step transition: {}", ex.what());
+    QMetaObject::invokeMethod(viewLoader, "setSource", Q_ARG(QUrl, QUrl("qrc:/ui/forms/MainForm.qml")));
+  }
 }

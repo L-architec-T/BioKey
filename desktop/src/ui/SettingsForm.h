@@ -16,6 +16,7 @@ public:
     machineID = QString::fromStdString(settings.machineID);
     installedVersion = QString::fromUtf8(settings.installedVersion);
     language = QString::fromUtf8(settings.language);
+    accentColor = QString::fromUtf8(settings.accentColor);
     serverIP = QString::fromUtf8(settings.serverIP);
     serverMAC = QString::fromUtf8(settings.serverMAC);
     pairingDiscoveryPort = settings.pairingDiscoveryPort;
@@ -30,6 +31,7 @@ public:
     settings.machineID = machineID.toStdString();
     settings.installedVersion = installedVersion.toStdString();
     settings.language = language.toStdString();
+    settings.accentColor = accentColor.toStdString();
     settings.serverIP = serverIP.toStdString();
     settings.serverMAC = serverMAC.toStdString();
     settings.pairingDiscoveryPort = pairingDiscoveryPort;
@@ -44,6 +46,7 @@ public:
   QString machineID{};
   QString installedVersion{};
   QString language{};
+  QString accentColor{};
   QString serverIP{};
   QString serverMAC{};
   uint16_t pairingDiscoveryPort{};
@@ -55,6 +58,7 @@ public:
   Q_PROPERTY(QString machineID MEMBER machineID)
   Q_PROPERTY(QString installedVersion MEMBER installedVersion)
   Q_PROPERTY(QString language MEMBER language)
+  Q_PROPERTY(QString accentColor MEMBER accentColor)
   Q_PROPERTY(QString serverIP MEMBER serverIP)
   Q_PROPERTY(QString serverMAC MEMBER serverMAC)
   Q_PROPERTY(uint16_t pairingDiscoveryPort MEMBER pairingDiscoveryPort)

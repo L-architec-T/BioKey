@@ -11,6 +11,7 @@ struct PCBUAppStorage {
   std::string machineID{};
   std::string installedVersion{};
   std::string language{};
+  std::string accentColor{};
   std::string serverIP{};
   std::string serverMAC{};
   uint16_t pairingDiscoveryPort{};

@@ -1,15 +1,36 @@
 #include <QGuiApplication>
 #include <QIcon>
 #include <QQmlApplicationEngine>
+#include <exception>
 
+#include "storage/AppSettings.h"
 #include "storage/LoggingSystem.h"
 
 int main(int argc, char *argv[]) {
+  std::set_terminate([]() {
+    spdlog::critical("Uncaught exception - application is terminating.");
+    if(auto ex = std::current_exception()) {
+      try {
+        std::rethrow_exception(ex);
+      } catch(const std::exception &e) {
+        spdlog::critical("Reason: {}", e.what());
+      } catch(...) {
+        spdlog::critical("Reason: unknown exception type.");
+      }
+    }
+    LoggingSystem::Destroy();
+    std::abort();
+  });
+
+  auto accentColor = AppSettings::Get().accentColor;
+  if(accentColor.empty())
+    accentColor = "#F0B400";
+
   qputenv("QT_QUICK_CONTROLS_STYLE", QByteArray("Material"));
   qputenv("QT_QUICK_CONTROLS_MATERIAL_THEME", QByteArray("Dark"));
   qputenv("QT_QUICK_CONTROLS_MATERIAL_VARIANT", QByteArray("Dense"));
   qputenv("QT_QUICK_CONTROLS_MATERIAL_PRIMARY", QByteArray("Amber"));
-  qputenv("QT_QUICK_CONTROLS_MATERIAL_ACCENT", QByteArray("#F0B400"));
+  qputenv("QT_QUICK_CONTROLS_MATERIAL_ACCENT", QByteArray::fromStdString(accentColor));
   LoggingSystem::Init("desktop");
 
   QGuiApplication app(argc, argv);

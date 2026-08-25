@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Dialogs
 import QtQuick.Layouts
 import QtQml.Models
 
@@ -38,58 +39,151 @@ Form {
                             anchors.top: parent.top
                             spacing: 6
 
-                            Label {
-                                text: '%1:'.arg(QI18n.Get('language'))
-                            }
-                            ComboBox {
-                                id: langComboBox
+                            RowLayout {
                                 Layout.fillWidth: true
-                                Layout.minimumWidth: 0
-                                model: ListModel {
-                                    id: langComboBoxModel
-                                    ListElement {
-                                        text: "Auto"
-                                        val: "auto"
+                                spacing: 14
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    Layout.preferredWidth: 1
+                                    Layout.alignment: Qt.AlignTop
+                                    spacing: 2
+
+                                    Label {
+                                        text: '%1:'.arg(QI18n.Get('language'))
                                     }
-                                    ListElement {
-                                        text: "English"
-                                        val: "en"
-                                    }
-                                    ListElement {
-                                        text: "Français"
-                                        val: "fr"
-                                    }
-                                    ListElement {
-                                        text: "Deutsch"
-                                        val: "de"
-                                    }
-                                    ListElement {
-                                        text: "Chinese (Simplified)"
-                                        val: "zh_CN"
-                                    }
-                                    ListElement {
-                                        text: "Portuguese"
-                                        val: "pt_PT"
-                                    }
-                                    ListElement {
-                                        text: "Portuguese (Brazil)"
-                                        val: "pt_BR"
-                                    }
-                                }
-                                textRole: 'text'
-                                currentIndex: {
-                                    let currLang = SettingsForm.GetSettings().language;
-                                    for (let i = 0; i < langComboBoxModel.count; i++) {
-                                        if (currLang === langComboBoxModel.get(i).val) {
-                                            return i;
+                                    ComboBox {
+                                        id: langComboBox
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 0
+                                        model: ListModel {
+                                            id: langComboBoxModel
+                                            ListElement {
+                                                text: "Auto"
+                                                val: "auto"
+                                            }
+                                            ListElement {
+                                                text: "English"
+                                                val: "en"
+                                            }
+                                            ListElement {
+                                                text: "Français"
+                                                val: "fr"
+                                            }
+                                            ListElement {
+                                                text: "Deutsch"
+                                                val: "de"
+                                            }
+                                            ListElement {
+                                                text: "Chinese (Simplified)"
+                                                val: "zh_CN"
+                                            }
+                                            ListElement {
+                                                text: "Portuguese"
+                                                val: "pt_PT"
+                                            }
+                                            ListElement {
+                                                text: "Portuguese (Brazil)"
+                                                val: "pt_BR"
+                                            }
+                                        }
+                                        textRole: 'text'
+                                        currentIndex: {
+                                            let currLang = SettingsForm.GetSettings().language;
+                                            for (let i = 0; i < langComboBoxModel.count; i++) {
+                                                if (currLang === langComboBoxModel.get(i).val) {
+                                                    return i;
+                                                }
+                                            }
+                                            return 0;
+                                        }
+                                        onCurrentIndexChanged: {
+                                            let settings = SettingsForm.GetSettings();
+                                            settings.language = langComboBoxModel.get(currentIndex).val;
+                                            SettingsForm.SetSettings(settings);
                                         }
                                     }
-                                    return 0;
                                 }
-                                onCurrentIndexChanged: {
-                                    let settings = SettingsForm.GetSettings();
-                                    settings.language = langComboBoxModel.get(currentIndex).val;
-                                    SettingsForm.SetSettings(settings);
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    Layout.preferredWidth: 1
+                                    Layout.alignment: Qt.AlignTop
+                                    spacing: 2
+
+                                    Label {
+                                        text: '%1:'.arg(QI18n.Get('accent_color'))
+                                        ToolTip.text: QI18n.Get('accent_color_desc')
+                                        ToolTip.visible: accentHoverHandler.hovered
+                                        HoverHandler {
+                                            id: accentHoverHandler
+                                        }
+                                    }
+                                    Flow {
+                                        id: accentColorRow
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 0
+                                        spacing: 8
+
+                                        property var presetColors: ['#F0B400', '#009688', '#3F51B5', '#8E24AA', '#E91E63', '#2196F3', '#43A047', '#E53935', '#FB8C00', '#00ACC1']
+                                        property string currentColor: SettingsForm.GetSettings().accentColor
+
+                                        function selectColor(color) {
+                                            accentColorRow.currentColor = color;
+                                            let settings = SettingsForm.GetSettings();
+                                            settings.accentColor = color;
+                                            SettingsForm.SetSettings(settings);
+                                        }
+
+                                        Repeater {
+                                            model: accentColorRow.presetColors
+                                            delegate: Rectangle {
+                                                required property string modelData
+                                                width: 22
+                                                height: 22
+                                                radius: width / 2
+                                                color: modelData
+                                                border.width: accentColorRow.currentColor.toLowerCase() === modelData.toLowerCase() ? 3 : 1
+                                                border.color: accentColorRow.currentColor.toLowerCase() === modelData.toLowerCase() ? 'white' : '#00000055'
+
+                                                TapHandler {
+                                                    onTapped: accentColorRow.selectColor(modelData)
+                                                }
+                                            }
+                                        }
+
+                                        Rectangle {
+                                            width: 22
+                                            height: 22
+                                            radius: width / 2
+                                            color: accentColorRow.presetColors.some(c => c.toLowerCase() === accentColorRow.currentColor.toLowerCase()) ? 'transparent' : accentColorRow.currentColor
+                                            border.width: 1
+                                            border.color: '#00000055'
+
+                                            Label {
+                                                anchors.centerIn: parent
+                                                visible: accentColorRow.presetColors.some(c => c.toLowerCase() === accentColorRow.currentColor.toLowerCase())
+                                                text: '+'
+                                                font.pixelSize: 14
+                                            }
+
+                                            TapHandler {
+                                                onTapped: accentColorDialog.open()
+                                            }
+
+                                            ToolTip.text: QI18n.Get('accent_color_custom')
+                                            ToolTip.visible: customColorHoverHandler.hovered
+                                            HoverHandler {
+                                                id: customColorHoverHandler
+                                            }
+                                        }
+
+                                        ColorDialog {
+                                            id: accentColorDialog
+                                            selectedColor: accentColorRow.currentColor
+                                            onAccepted: accentColorRow.selectColor(selectedColor.toString())
+                                        }
+                                    }
                                 }
                             }
 
@@ -446,6 +540,7 @@ Form {
                     settings.clientConnectRetries = clientConnectRetriesNum;
                     SettingsForm.SetSettings(settings);
                     SettingsForm.OnSaveSettingsClicked(viewLoader, window);
+                    AppTheme.accentColor = settings.accentColor;
                 };
 
                 if (unlockServerPortNum !== SettingsForm.GetSettings().unlockServerPort && SettingsForm.HasUDPDevices()) {

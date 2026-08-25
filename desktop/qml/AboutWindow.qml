@@ -10,6 +10,7 @@ ApplicationWindow {
     width: 800
     height: 600
     title: QI18n.Get('about')
+    Material.accent: AppTheme.accentColor
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 25

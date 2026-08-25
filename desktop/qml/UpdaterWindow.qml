@@ -17,6 +17,7 @@ ApplicationWindow {
     title: QI18n.Get('updater')
     flags: Qt.Dialog
     modality: Qt.ApplicationModal
+    Material.accent: AppTheme.accentColor
 
     property bool canClose: false
     onClosing: function(close) { close.accepted = updaterWindow.canClose }

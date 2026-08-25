@@ -50,6 +50,7 @@ PCBUAppStorage AppSettings::Load() {
     settings.machineID = machineID;
     settings.installedVersion = json["installedVersion"];
     settings.language = json["language"];
+    settings.accentColor = json.value("accentColor", "#F0B400");
     settings.serverIP = json["serverIP"];
     settings.serverMAC = json["serverMAC"];
     settings.pairingDiscoveryPort = json.value("pairingDiscoveryPort", 43297);
@@ -75,6 +76,7 @@ PCBUAppStorage AppSettings::Load() {
     auto def = PCBUAppStorage();
     def.machineID = machineID.empty() ? StringUtils::RandomString(32) : machineID;
     def.language = "auto";
+    def.accentColor = "#F0B400";
     def.serverIP = "auto";
     def.pairingDiscoveryPort = 43297;
     def.pairingServerPort = 43295;
@@ -102,6 +104,7 @@ void AppSettings::Save(const PCBUAppStorage &storage) {
         {"machineID", storage.machineID},
         {"installedVersion", storage.installedVersion},
         {"language", storage.language},
+        {"accentColor", storage.accentColor},
         {"serverIP", storage.serverIP},
         {"serverMAC", storage.serverMAC},
         {"pairingDiscoveryPort", storage.pairingDiscoveryPort},

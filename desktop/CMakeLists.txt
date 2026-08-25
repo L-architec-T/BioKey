@@ -128,6 +128,8 @@ set(UI_SRC_FILES
         src/ui/models/NetworkListModel.h
         src/ui/helpers/I18nWrapper.cpp
         src/ui/helpers/I18nWrapper.h
+        src/ui/helpers/AppTheme.cpp
+        src/ui/helpers/AppTheme.h
 )
 qt_add_executable(pcbu_desktop
         ../deps/qrcodegen.cpp
