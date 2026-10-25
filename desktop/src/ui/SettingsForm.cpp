@@ -85,7 +85,7 @@ void SettingsForm::Show(QObject *viewLoader) {
 }
 
 void SettingsForm::OnSaveSettingsClicked(QObject *viewLoader, QObject *window) {
-  AppSettings::Save(m_EditSettings.ToStorage());
+  AppSettings::Save(m_EditSettings.ToStorage(AppSettings::Get()));
   try {
     auto installer = ServiceInstaller();
     installer.ApplySettings(m_EditServiceSettings, false);

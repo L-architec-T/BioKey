@@ -11,6 +11,7 @@
 #include <shadow.h>
 #include <thread>
 #include <unistd.h>
+#include <sstream>
 #include <unordered_map>
 #include <utility>
 
@@ -111,6 +112,32 @@ bool PlatformHelper::Suspend() {
     return false;
   }
   return true;
+}
+
+PlatformHelper::SeatState PlatformHelper::GetSeatState() {
+  auto seatResult = Shell::RunCommand("loginctl show-seat seat0 -p ActiveSession --value");
+  auto sessionId = StringUtils::Trim(seatResult.output);
+  if(seatResult.exitCode != 0 || sessionId.empty()) {
+    spdlog::warn("No active session on seat0 (exit={}).", seatResult.exitCode);
+    return {};
+  }
+  auto sessionResult = Shell::RunCommand(fmt::format("loginctl show-session {} -p Class -p LockedHint -p Name", sessionId));
+  if(sessionResult.exitCode != 0) {
+    spdlog::warn("loginctl show-session {} failed (exit={}).", sessionId, sessionResult.exitCode);
+    return {};
+  }
+  std::unordered_map<std::string, std::string> props{};
+  std::istringstream lines(sessionResult.output);
+  for(std::string line; std::getline(lines, line);) {
+    auto eq = line.find('=');
+    if(eq != std::string::npos)
+      props[line.substr(0, eq)] = StringUtils::Trim(line.substr(eq + 1));
+  }
+  if(props["Class"] == "greeter")
+    return {SeatScreen::GREETER, {}};
+  if(props["Class"] == "user")
+    return {props["LockedHint"] == "yes" ? SeatScreen::LOCKED : SeatScreen::UNLOCKED, props["Name"]};
+  return {};
 }
 
 std::vector<std::string> PlatformHelper::GetGreeterUserOrder() {

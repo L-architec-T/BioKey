@@ -26,8 +26,9 @@ public:
     clientConnectTimeout = settings.clientConnectTimeout;
     clientConnectRetries = settings.clientConnectRetries;
   }
-  [[nodiscard]] PCBUAppStorage ToStorage() const {
-    auto settings = PCBUAppStorage();
+  // Overlays the form's fields on [settings]: fields the form doesn't expose (lockListenPort,
+  // win*/unix*) must keep their stored values instead of being reset to zero/empty.
+  [[nodiscard]] PCBUAppStorage ToStorage(PCBUAppStorage settings) const {
     settings.machineID = machineID.toStdString();
     settings.installedVersion = installedVersion.toStdString();
     settings.language = language.toStdString();

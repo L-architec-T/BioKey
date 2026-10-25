@@ -4,7 +4,9 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <mutex>
 #include <thread>
+#include <unordered_map>
 
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
@@ -20,6 +22,7 @@
 #include "utils/StringUtils.h"
 
 #ifdef LINUX
+#include "BlePresenceWatcher.h"
 #include "Login1UnlockWatcher.h"
 #endif
 
@@ -80,6 +83,26 @@ void HandleSelectUserCommand(const PairedDevice &device) {
     return;
   }
 
+  // Key presses go to whatever has focus: only send them when the greeter or this user's own
+  // lock screen is up, never into an unlocked session (Wi-Fi reconnect / lockd restart while
+  // the user is working) or onto another user's lock screen.
+  auto seat = PlatformHelper::GetSeatState();
+  if(seat.screen == PlatformHelper::SeatScreen::LOCKED) {
+    if(seat.userName != device.userName) {
+      spdlog::info("Select-user request from '{}' ignored: the locked session belongs to '{}'.", device.deviceName, seat.userName);
+      return;
+    }
+    // Lock screen: no user list, a single key press just raises the password prompt.
+    spdlog::info("Raising '{}' lock screen prompt for device '{}'.", device.userName, device.deviceName);
+    if(!PlatformHelper::SelectGreeterUser(0))
+      spdlog::error("Failed to raise the lock screen prompt for '{}'.", device.userName);
+    return;
+  }
+  if(seat.screen != PlatformHelper::SeatScreen::GREETER) {
+    spdlog::info("Select-user request from '{}' ignored: no greeter or lock screen showing.", device.deviceName);
+    return;
+  }
+
   auto order = PlatformHelper::GetGreeterUserOrder();
   auto it = std::ranges::find(order, device.userName);
   if(it == order.end()) {
@@ -99,15 +122,122 @@ void SelectGreeterUserOnStartup() {
   if(devices.empty())
     return;
 
+  // Waits for the greeter itself, not just AccountsService: at boot lockd usually starts before
+  // GDM's greeter session is active. An unlocked session means lockd was merely restarted while
+  // the user is working — nothing to select then.
   constexpr int MAX_ATTEMPTS = 15;
   for(int attempt = 0; attempt < MAX_ATTEMPTS; ++attempt) {
-    if(!PlatformHelper::GetGreeterUserOrder().empty()) {
+    auto screen = PlatformHelper::GetSeatState().screen;
+    if(screen == PlatformHelper::SeatScreen::UNLOCKED)
+      return;
+    if(screen != PlatformHelper::SeatScreen::UNKNOWN && !PlatformHelper::GetGreeterUserOrder().empty()) {
       HandleSelectUserCommand(devices.front());
       return;
     }
     std::this_thread::sleep_for(std::chrono::seconds(1));
   }
   spdlog::warn("Greeter never became ready for an auto-selected user at startup (gave up after {}s).", MAX_ATTEMPTS);
+}
+#endif
+
+#ifdef LINUX
+// Proximity lock: while on the PC's Wi-Fi the phone sends an encrypted "presence" every ~10s,
+// carrying its timeout in seconds; the Bluetooth flavour is a signed BLE beacon (see
+// BlePresenceWatcher), tracked as its own entry so either channel can be used alone. Once a device that was present stays silent past its
+// timeout, its user's session gets locked — whatever the reason it went silent (out of range,
+// Wi-Fi off, flat battery, app killed), which a phone-side "Wi-Fi lost" trigger can't cover
+// since it has no network left to send anything on. steady_clock doesn't advance during PC
+// suspend, so a resume doesn't count the sleep as absence.
+constexpr int PRESENCE_MIN_TIMEOUT_S = 20;
+constexpr int PRESENCE_MAX_TIMEOUT_S = 600;
+
+enum class PresenceChannel { WIFI, BLUETOOTH };
+struct DevicePresence {
+  PairedDevice device;
+  PresenceChannel channel;
+  std::chrono::steady_clock::time_point lastSeen;
+  std::chrono::seconds timeout;
+};
+// Keyed by deviceId + channel. Written from the UDP loop and the BLE watcher thread.
+std::unordered_map<std::string, DevicePresence> g_Presence{};
+std::mutex g_PresenceMutex{};
+
+std::string PresenceKey(const PairedDevice &device, PresenceChannel channel) {
+  return device.id + (channel == PresenceChannel::BLUETOOTH ? "/ble" : "/wifi");
+}
+
+const char *ChannelName(PresenceChannel channel) {
+  return channel == PresenceChannel::BLUETOOTH ? "Bluetooth" : "Wi-Fi";
+}
+
+void ArmPresence(const PairedDevice &device, PresenceChannel channel, int timeoutS) {
+  timeoutS = std::clamp(timeoutS, PRESENCE_MIN_TIMEOUT_S, PRESENCE_MAX_TIMEOUT_S);
+  std::lock_guard lock(g_PresenceMutex);
+  auto [it, inserted] = g_Presence.insert_or_assign(PresenceKey(device, channel),
+                                                    DevicePresence{device, channel, std::chrono::steady_clock::now(), std::chrono::seconds(timeoutS)});
+  if(inserted)
+    spdlog::info("Proximity lock ({}) armed for '{}' (user '{}', timeout {}s).", ChannelName(channel), device.deviceName, device.userName, timeoutS);
+}
+
+void DisarmPresence(const PairedDevice &device, PresenceChannel channel) {
+  std::lock_guard lock(g_PresenceMutex);
+  if(g_Presence.erase(PresenceKey(device, channel)) > 0)
+    spdlog::info("Proximity lock ({}) disarmed for '{}'.", ChannelName(channel), device.deviceName);
+}
+
+
+void HandlePresenceCommand(const PairedDevice &device, const std::vector<uint8_t> &plaintext) {
+  int timeoutS{};
+  try {
+    timeoutS = std::stoi(std::string(plaintext.begin(), plaintext.end()));
+  } catch(...) {
+    spdlog::warn("Rejected malformed presence payload from '{}'.", device.deviceName);
+    return;
+  }
+  ArmPresence(device, PresenceChannel::WIFI, timeoutS);
+}
+
+void HandlePresenceOffCommand(const PairedDevice &device) {
+  DisarmPresence(device, PresenceChannel::WIFI);
+}
+
+void HandleBleSighting(const BlePresenceWatcher::Sighting &sighting) {
+  if(sighting.disarm)
+    DisarmPresence(sighting.device, PresenceChannel::BLUETOOTH);
+  else
+    ArmPresence(sighting.device, PresenceChannel::BLUETOOTH, sighting.timeoutS);
+}
+
+void CheckPresenceTimeouts() {
+  std::vector<std::pair<PairedDevice, PresenceChannel>> expired{};
+  {
+    std::lock_guard lock(g_PresenceMutex);
+    auto now = std::chrono::steady_clock::now();
+    auto bleScanning = BlePresenceWatcher::IsScanning();
+    for(auto it = g_Presence.begin(); it != g_Presence.end();) {
+      auto &presence = it->second;
+      // The PC not scanning (adapter off, bluetoothd down) says nothing about the phone.
+      if(presence.channel == PresenceChannel::BLUETOOTH && !bleScanning)
+        presence.lastSeen = now;
+      if(now - presence.lastSeen < presence.timeout) {
+        ++it;
+        continue;
+      }
+      // Disarmed until the phone is back, so an absence locks once instead of every second.
+      expired.emplace_back(presence.device, presence.channel);
+      it = g_Presence.erase(it);
+    }
+  }
+  for(const auto &[device, channel] : expired) {
+    auto seat = PlatformHelper::GetSeatState();
+    if(seat.screen != PlatformHelper::SeatScreen::UNLOCKED || seat.userName != device.userName) {
+      spdlog::info("'{}' out of {} range, but no unlocked session of '{}' to lock.", device.deviceName, ChannelName(channel), device.userName);
+      continue;
+    }
+    spdlog::info("'{}' out of {} range: locking '{}' session.", device.deviceName, ChannelName(channel), device.userName);
+    if(!PlatformHelper::LockScreen())
+      spdlog::error("Proximity lock for '{}' failed.", device.deviceName);
+  }
 }
 #endif
 
@@ -222,6 +352,7 @@ int main() {
   // and replays any configured macro; has no coordination with the UDP loop below, since the
   // macro push (setMacro) and the macro replay trigger are deliberately decoupled flows.
   std::thread(Login1UnlockWatcher::Run).detach();
+  std::thread([] { BlePresenceWatcher::Run(HandleBleSighting); }).detach();
 #endif
 
   // Blocking recv with a timeout, not a fully blocking one, purely so the signal-driven
@@ -236,6 +367,9 @@ int main() {
     socklen_t fromLen = sizeof(fromAddr);
     auto received = recvfrom(sock, reinterpret_cast<char *>(buffer.data()), static_cast<int>(buffer.size()), 0,
                               reinterpret_cast<struct sockaddr *>(&fromAddr), &fromLen);
+#ifdef LINUX
+    CheckPresenceTimeouts();
+#endif
     if(received < 0) {
       auto err = SOCKET_LAST_ERROR;
       if(err == SOCKET_ERROR_TRY_AGAIN || err == SOCKET_ERROR_WOULD_BLOCK)
@@ -266,6 +400,15 @@ int main() {
 #endif
     } else if(request->cmd == "suspend") {
       HandleSuspendCommand(device);
+    } else if(request->cmd == "presence" || request->cmd == "presenceOff") {
+#ifdef LINUX
+      if(request->cmd == "presence")
+        HandlePresenceCommand(device, plaintext);
+      else
+        HandlePresenceOffCommand(device);
+#else
+      spdlog::warn("{} command received but isn't supported on this platform.", request->cmd);
+#endif
     } else if(request->cmd == "setMacro") {
 #ifdef LINUX
       HandleSetMacroCommand(device, plaintext);

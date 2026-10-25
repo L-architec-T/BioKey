@@ -42,6 +42,15 @@ public:
 #endif
 
 #ifdef LINUX
+  enum class SeatScreen { GREETER, LOCKED, UNLOCKED, UNKNOWN };
+  struct SeatState {
+    SeatScreen screen{SeatScreen::UNKNOWN};
+    std::string userName{}; // owner of the active session; empty for GREETER/UNKNOWN
+  };
+  // What seat0 is showing right now, from logind: the login greeter, a locked user
+  // session, or an unlocked one (where synthetic key presses would land in user apps).
+  static SeatState GetSeatState();
+
   static std::vector<std::string> GetGreeterUserOrder();
 
   static bool SelectGreeterUser(int userIndex);
