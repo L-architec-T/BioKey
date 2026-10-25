@@ -95,7 +95,8 @@ if [[ "$PLATFORM" == "win" ]]; then
     rm installer_dir/opengl32sw.dll
   fi
 
-  iscc "/DAppVersion=$(tr -d '[:space:]' < ../../VERSION)" ../win/installer.iss
+  # Git Bash would rewrite "/D..." into a Windows path (MSYS argument conversion); keep it as is.
+  MSYS2_ARG_CONV_EXCL="/D" iscc "/DAppVersion=$(tr -d '[:space:]' < ../../VERSION)" ../win/installer.iss
   mv mysetup.exe BioKey-Setup-"$ARCH".exe
 elif [[ "$PLATFORM" == "linux" ]]; then
   wget "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-$LINUX_ARCH.AppImage" && chmod +x ./linuxdeploy-"$LINUX_ARCH".AppImage
