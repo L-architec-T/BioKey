@@ -17,6 +17,11 @@ import org.pcbu.libreclient.ui.theme.AppTheme
 import org.pcbu.libreclient.ui.theme.BioKeyTheme
 import org.pcbu.libreclient.update.AutoUpdateHost
 import org.pcbu.libreclient.ui.components.SystemPromptsHost
+import org.pcbu.libreclient.ui.components.appContentPadding
+import org.pcbu.libreclient.ui.theme.BgPrimary
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Surface
+import androidx.compose.ui.Modifier
 
 class MainActivity : ComponentActivity() {
     override fun attachBaseContext(newBase: Context) {
@@ -61,7 +66,12 @@ class MainActivity : ComponentActivity() {
             BioKeyTheme {
                 AutoUpdateHost()
                 SystemPromptsHost(persistentChannelId = org.pcbu.libreclient.service.UnlockForegroundService.CHANNEL_ID)
-                AppNavHost(pairingRepository = pairingRepository, preferencesStore = preferencesStore)
+                // Insets once at the root (as in CallUp): safe drawing area normally, only the
+                // keyboard in full screen — otherwise the screens' Scaffolds keep reserving the
+                // camera-cutout band, an empty strip above the top bar.
+                Surface(modifier = Modifier.fillMaxSize().appContentPadding(), color = BgPrimary) {
+                    AppNavHost(pairingRepository = pairingRepository, preferencesStore = preferencesStore)
+                }
             }
         }
     }

@@ -146,7 +146,11 @@ fun GlassAlertDialog(
             Column(modifier = Modifier.padding(24.dp)) {
                 ProvideTextStyle(MaterialTheme.typography.headlineSmall) { title() }
                 Spacer(Modifier.height(16.dp))
-                ProvideTextStyle(MaterialTheme.typography.bodyMedium) { text() }
+                // Same as SliderSafeDialog: a tall body (long release notes) scrolls within what's
+                // left instead of pushing the buttons off the screen.
+                Box(Modifier.weight(1f, fill = false)) {
+                    ProvideTextStyle(MaterialTheme.typography.bodyMedium) { text() }
+                }
                 Spacer(Modifier.height(24.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
                     dismissButton?.invoke()
