@@ -1,6 +1,10 @@
-## BioKey 0.2.1 — corrections de l'application Android
+## BioKey 0.2.2
 
-- **Plein écran** : plus de bande vide en haut de l'écran sous la caméra, la barre BIOKEY remonte tout en haut.
-- **Mise à jour** : la fenêtre « Mise à jour disponible » défile quand les notes de version sont longues, et ses boutons restent toujours visibles.
+### Téléphone (Android)
+- **Plein écran** : plus aucune bande claire au-dessus de la barre BIOKEY.
+- **Appairage par code** : saisissez le code d'appairage affiché à côté du QR sur le PC (majuscules, minuscules, tirets ou espaces, peu importe) au lieu de scanner.
+- Les boutons Wake-on-LAN (réveil du PC) sont retirés.
+- Éditeur de macros : l'étape « Raccourci » s'appelle maintenant « Touche ».
 
-L'application PC est identique à la 0.2.0.
+### PC (Windows, Linux, macOS)
+- **Correction** : l'application se fermait toute seule à la fin d'un appairage par QR ou par code.
