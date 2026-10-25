@@ -10,10 +10,6 @@
     <string name="device_detail_user">User: %1$s</string>
     <string name="device_detail_connection">Connection: %1$s</string>
     <string name="device_detail_os">OS: %1$s</string>
-    <string name="device_detail_wake">Wake (Wake-on-LAN)</string>
-    <string name="device_detail_wake_no_mac">No known MAC address for this device.</string>
-    <string name="device_detail_wake_sent">Wake packet sent.</string>
-    <string name="device_detail_wake_error">Error</string>
     <string name="device_detail_suspend">Suspend (deep sleep)</string>
     <string name="device_detail_suspend_sent">Suspend command sent.</string>
     <string name="device_detail_suspend_error">Error</string>
@@ -25,8 +21,8 @@
     <string name="pairing_scan_title">Pair a PC</string>
     <string name="pairing_scan_instructions">Scan the QR code shown by BioKey on your computer (Pair button).</string>
     <string name="pairing_scan_button">Scan pairing QR</string>
-    <string name="pairing_scan_manual_label">Or paste the QR\'s JSON (testing without a camera)</string>
-    <string name="pairing_scan_manual_button">Pair from pasted text</string>
+    <string name="pairing_scan_manual_label">Or type the pairing code shown next to the QR</string>
+    <string name="pairing_scan_manual_button">Pair with the code</string>
     <string name="pairing_scan_cancelled">Scan cancelled</string>
     <string name="pairing_scan_camera_denied">Camera permission denied</string>
     <string name="pairing_scan_error">Pairing error</string>
@@ -68,10 +64,6 @@
     <string name="settings_lock_on_bluetooth">Lock when the PC loses Bluetooth</string>
     <string name="settings_lock_on_bluetooth_desc">The phone broadcasts a signed Bluetooth signal; the PC locks your session once it no longer picks it up (out of range, Bluetooth off…). The PC\'s Bluetooth must be on.</string>
     <string name="settings_lock_timeout">Delay before locking</string>
-
-    <string name="device_detail_wake_from_suspend">Wake from deep sleep</string>
-    <string name="device_detail_wake_from_suspend_sent">Wake packet sent.</string>
-    <string name="device_detail_wake_from_suspend_error">Error</string>
     <string name="device_detail_macro_title">Post-unlock macro</string>
     <string name="device_detail_macro_none">No macro configured.</string>
     <string name="device_detail_macro_summary">%1$d step(s) configured.</string>
@@ -87,7 +79,7 @@
     <string name="macro_editor_move_up">Move up</string>
     <string name="macro_editor_move_down">Move down</string>
     <string name="macro_editor_delete_step">Delete step</string>
-    <string name="macro_editor_step_type_key_combo">Shortcut</string>
+    <string name="macro_editor_step_type_key_combo">Key</string>
     <string name="macro_editor_step_type_timeout">Pause</string>
     <string name="macro_editor_step_type_type_text">Text</string>
     <string name="macro_editor_step_summary_key_combo">Keys: %1$s</string>

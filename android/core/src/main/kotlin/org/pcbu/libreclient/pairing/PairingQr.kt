@@ -29,9 +29,15 @@ class MalformedPairingQrException(raw: String, cause: Throwable? = null) :
 object PairingQrParser {
     private val lenientJson = Json { ignoreUnknownKeys = true }
 
+    /**
+     * [raw] is either the QR's JSON or the pairing code typed from the PC screen: that same
+     * JSON in base32 (pcbu-desktop's StringUtils::ToBase32String, no padding), shown in groups
+     * of 5 separated by "-". Case, spaces and dashes are ignored.
+     */
     fun parse(raw: String): PairingTarget {
+        val json = raw.trim().let { if (it.startsWith("{")) it else decodePairingCode(it) ?: it }
         val obj = try {
-            lenientJson.parseToJsonElement(raw).jsonObject
+            lenientJson.parseToJsonElement(json).jsonObject
         } catch (e: Exception) {
             throw MalformedPairingQrException(raw, e)
         }
@@ -53,5 +59,27 @@ object PairingQrParser {
         } catch (e: Exception) {
             throw MalformedPairingQrException(raw, e)
         }
+    }
+
+    private const val BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
+
+    /** Base32 pairing code → JSON text, or null if it isn't valid base32. */
+    internal fun decodePairingCode(code: String): String? {
+        val chars = code.uppercase().filter { it.isLetterOrDigit() }
+        if (chars.isEmpty()) return null
+        val out = java.io.ByteArrayOutputStream()
+        var buffer = 0
+        var bits = 0
+        for (c in chars) {
+            val v = BASE32_ALPHABET.indexOf(c)
+            if (v < 0) return null
+            buffer = (buffer shl 5) or v
+            bits += 5
+            if (bits >= 8) {
+                out.write((buffer shr (bits - 8)) and 0xFF)
+                bits -= 8
+            }
+        }
+        return out.toString(Charsets.UTF_8.name())
     }
 }

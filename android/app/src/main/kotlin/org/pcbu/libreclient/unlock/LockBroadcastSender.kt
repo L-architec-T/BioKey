@@ -54,9 +54,8 @@ object LockBroadcastSender {
         sendCommand(context, deviceId, encKey, cmd = "selectUser", marker = SELECT_USER_MARKER)
 
     /** Asks pcbu-lockd to suspend the PC (system sleep, not hibernate — see
-     * PlatformHelper::Suspend). Waking it back up is a separate, unauthenticated
-     * Wake-on-LAN magic packet (see [org.pcbu.libreclient.net.WakeOnLan]) — nothing on
-     * the PC can act on an incoming command once it's actually asleep. */
+     * PlatformHelper::Suspend). The app can't wake it back up: nothing on the PC can act
+     * on an incoming command once it's actually asleep. */
     fun sendSuspend(context: Context, deviceId: String, encKey: String) =
         sendCommand(context, deviceId, encKey, cmd = "suspend", marker = SUSPEND_MARKER)
 

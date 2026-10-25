@@ -14,17 +14,10 @@
     <string name="device_detail_user">Utilisateur : %1$s</string>
     <string name="device_detail_connection">Connexion : %1$s</string>
     <string name="device_detail_os">Système : %1$s</string>
-    <string name="device_detail_wake">Réveiller (Wake-on-LAN)</string>
-    <string name="device_detail_wake_no_mac">Aucune adresse MAC connue pour cet appareil.</string>
-    <string name="device_detail_wake_sent">Paquet de réveil envoyé.</string>
-    <string name="device_detail_wake_error">Erreur</string>
     <string name="device_detail_suspend">Mettre en veille profonde</string>
     <string name="device_detail_suspend_sent">Commande de mise en veille envoyée.</string>
     <string name="device_detail_suspend_error">Erreur</string>
     <string name="device_detail_suspend_no_key">Clé de chiffrement introuvable pour cet appareil.</string>
-    <string name="device_detail_wake_from_suspend">Sortir de la veille profonde</string>
-    <string name="device_detail_wake_from_suspend_sent">Paquet de réveil envoyé.</string>
-    <string name="device_detail_wake_from_suspend_error">Erreur</string>
     <string name="device_detail_delete">Supprimer</string>
     <string name="device_detail_delete_confirm_title">Supprimer cet appareil ?</string>
     <string name="device_detail_delete_confirm_body">Ceci supprime uniquement l\'appairage sur ce téléphone. Le protocole PCBU ne propose aucun message de « désappairage » : pensez à aussi supprimer cet appareil côté PC si besoin.</string>
@@ -43,7 +36,7 @@
     <string name="macro_editor_move_up">Monter</string>
     <string name="macro_editor_move_down">Descendre</string>
     <string name="macro_editor_delete_step">Supprimer l\'étape</string>
-    <string name="macro_editor_step_type_key_combo">Raccourci</string>
+    <string name="macro_editor_step_type_key_combo">Touche</string>
     <string name="macro_editor_step_type_timeout">Pause</string>
     <string name="macro_editor_step_type_type_text">Texte</string>
     <string name="macro_editor_step_summary_key_combo">Touches : %1$s</string>
@@ -57,8 +50,8 @@
     <string name="pairing_scan_title">Appairer un PC</string>
     <string name="pairing_scan_instructions">Scannez le QR code d\'appairage affiché par BioKey sur votre ordinateur.</string>
     <string name="pairing_scan_button">Scanner le QR d\'appairage</string>
-    <string name="pairing_scan_manual_label">Ou coller le JSON du QR (test sans caméra)</string>
-    <string name="pairing_scan_manual_button">Appairer depuis le texte collé</string>
+    <string name="pairing_scan_manual_label">Ou saisissez le code d\'appairage affiché à côté du QR</string>
+    <string name="pairing_scan_manual_button">Appairer avec le code</string>
     <string name="pairing_scan_cancelled">Scan annulé</string>
     <string name="pairing_scan_camera_denied">Permission caméra refusée</string>
     <string name="pairing_scan_error">Erreur d\'appairage</string>

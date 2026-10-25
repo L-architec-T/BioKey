@@ -21,6 +21,8 @@ import org.pcbu.libreclient.ui.components.appContentPadding
 import org.pcbu.libreclient.ui.theme.BgPrimary
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.Box
+import androidx.core.view.WindowCompat
 import androidx.compose.ui.Modifier
 
 class MainActivity : ComponentActivity() {
@@ -33,6 +35,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Edge-to-edge (targetSdk 34 doesn't force it): the window no longer reserves the status
+        // bar band itself — even hidden in full screen, it left an empty strip above the top bar.
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         // DashBoard analytics (installs, sessions, retention) — see DashBoard/integration/README.md
         DashboardAnalytics.init(application, "pk_aa5fac8b6ac5440e68ac54c52b48ca00")
 
@@ -66,11 +71,13 @@ class MainActivity : ComponentActivity() {
             BioKeyTheme {
                 AutoUpdateHost()
                 SystemPromptsHost(persistentChannelId = org.pcbu.libreclient.service.UnlockForegroundService.CHANNEL_ID)
-                // Insets once at the root (as in CallUp): safe drawing area normally, only the
-                // keyboard in full screen — otherwise the screens' Scaffolds keep reserving the
-                // camera-cutout band, an empty strip above the top bar.
-                Surface(modifier = Modifier.fillMaxSize().appContentPadding(), color = BgPrimary) {
-                    AppNavHost(pairingRepository = pairingRepository, preferencesStore = preferencesStore)
+                // Insets once at the root: safe drawing area normally, only the keyboard in full
+                // screen. The background is painted under the bars too, so no lighter strip shows
+                // above the top bar whether the status bar is visible or hidden.
+                Surface(modifier = Modifier.fillMaxSize(), color = BgPrimary) {
+                    Box(Modifier.fillMaxSize().appContentPadding()) {
+                        AppNavHost(pairingRepository = pairingRepository, preferencesStore = preferencesStore)
+                    }
                 }
             }
         }

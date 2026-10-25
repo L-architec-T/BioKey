@@ -29,9 +29,7 @@ import org.pcbu.libreclient.ui.appearance.GlassAlertDialog
 import org.pcbu.libreclient.ui.components.PillButton
 import org.pcbu.libreclient.ui.components.SubScreen
 import org.pcbu.libreclient.ui.theme.Red
-import org.pcbu.libreclient.ui.theme.Success
 import org.pcbu.libreclient.ui.theme.TextSecondary
-import org.pcbu.libreclient.net.WakeOnLan
 import org.pcbu.libreclient.pairing.PairingRepository
 import org.pcbu.libreclient.protocol.model.MacroDto
 import org.pcbu.libreclient.protocol.model.PcbuJson
@@ -79,33 +77,6 @@ fun DeviceDetailScreen(
                 color = TextSecondary,
             )
 
-            val macs = currentDevice.macAddressesCsv.split(",").filter { it.isNotBlank() }
-            val wakeSentMessage = stringResource(R.string.device_detail_wake_sent)
-            val wakeErrorMessage = stringResource(R.string.device_detail_wake_error)
-            PillButton(
-                onClick = {
-                    scope.launch {
-                        status = try {
-                            withContext(Dispatchers.IO) { macs.forEach { WakeOnLan.send(it) } }
-                            wakeSentMessage
-                        } catch (e: Exception) {
-                            "$wakeErrorMessage : ${e.toUserMessage()}"
-                        }
-                    }
-                },
-                enabled = macs.isNotEmpty(),
-                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-                text = stringResource(R.string.device_detail_wake),
-                tone = Success,
-            )
-            if (macs.isEmpty()) {
-                Text(
-                    stringResource(R.string.device_detail_wake_no_mac),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary,
-                )
-            }
-
             val suspendSentMessage = stringResource(R.string.device_detail_suspend_sent)
             val suspendErrorMessage = stringResource(R.string.device_detail_suspend_error)
             val suspendNoKeyMessage = stringResource(R.string.device_detail_suspend_no_key)
@@ -127,26 +98,8 @@ fun DeviceDetailScreen(
                         }
                     }
                 },
-                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                 text = stringResource(R.string.device_detail_suspend),
-            )
-
-            val wakeFromSuspendSentMessage = stringResource(R.string.device_detail_wake_from_suspend_sent)
-            val wakeFromSuspendErrorMessage = stringResource(R.string.device_detail_wake_from_suspend_error)
-            PillButton(
-                onClick = {
-                    scope.launch {
-                        status = try {
-                            withContext(Dispatchers.IO) { macs.forEach { WakeOnLan.send(it) } }
-                            wakeFromSuspendSentMessage
-                        } catch (e: Exception) {
-                            "$wakeFromSuspendErrorMessage : ${e.toUserMessage()}"
-                        }
-                    }
-                },
-                enabled = macs.isNotEmpty(),
-                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                text = stringResource(R.string.device_detail_wake_from_suspend),
             )
 
             val macroStepCount = remember(currentDevice.macroStepsJson) {
