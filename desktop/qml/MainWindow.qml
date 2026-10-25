@@ -165,6 +165,10 @@ ApplicationWindow {
         PairingForm.OnNextClicked(viewLoader, window);
     }
 
+    function finishQRPairing() {
+        PairingForm.OnNextClicked(viewLoader, window);
+    }
+
     function showUpdaterWindow() {
         let updaterWin = Qt.createComponent("qrc:/ui/UpdaterWindow.qml").createObject(window);
         updaterWin.show();

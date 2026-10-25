@@ -100,8 +100,11 @@ void PairingForm::UpdateStepForm(QObject *viewLoader, QObject *window) {
     }
     m_PairingServer = std::make_unique<PairingServer>(
         [window](const std::string &error) { QMetaObject::invokeMethod(window, "showErrorMessage", Q_ARG(QVariant, QString::fromUtf8(error))); },
-        [this, viewLoader, window]() {
-          QMetaObject::invokeMethod(this, "OnNextClicked", Qt::QueuedConnection, Q_ARG(QObject *, viewLoader), Q_ARG(QObject *, window));
+        [window]() {
+          // Through the window's QML function (like finishBluetoothPairing): Loader.setSource()
+          // called from plain C++, with no QML caller on the stack, resolves its URL against a
+          // null calling context in Qt 6 and crashes. Queued: this runs on the client thread.
+          QMetaObject::invokeMethod(window, "finishQRPairing", Qt::QueuedConnection);
         });
 
     m_ServerId = StringUtils::RandomString(8);
