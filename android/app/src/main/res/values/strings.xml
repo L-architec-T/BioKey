@@ -1,0 +1,97 @@
+<resources>
+    <string name="app_name">BioKey</string>
+    <string name="cancel">Annuler</string>
+
+    <string name="devices_title">Appareils appairés</string>
+    <string name="devices_add">Appairer un PC</string>
+    <string name="stats_devices">Appareils</string>
+    <string name="stats_unlocks">Connexions</string>
+    <string name="stats_macros">Macros</string>
+    <string name="stats_denied">Refusées</string>
+    <string name="devices_empty">Aucun PC appairé. Touchez + pour scanner le QR affiché par le logiciel PC.</string>
+
+    <string name="device_detail_not_found">Appareil introuvable (supprimé ?).</string>
+    <string name="device_detail_user">Utilisateur : %1$s</string>
+    <string name="device_detail_connection">Connexion : %1$s</string>
+    <string name="device_detail_os">Système : %1$s</string>
+    <string name="device_detail_wake">Réveiller (Wake-on-LAN)</string>
+    <string name="device_detail_wake_no_mac">Aucune adresse MAC connue pour cet appareil.</string>
+    <string name="device_detail_wake_sent">Paquet de réveil envoyé.</string>
+    <string name="device_detail_wake_error">Erreur</string>
+    <string name="device_detail_suspend">Mettre en veille profonde</string>
+    <string name="device_detail_suspend_sent">Commande de mise en veille envoyée.</string>
+    <string name="device_detail_suspend_error">Erreur</string>
+    <string name="device_detail_suspend_no_key">Clé de chiffrement introuvable pour cet appareil.</string>
+    <string name="device_detail_wake_from_suspend">Sortir de la veille profonde</string>
+    <string name="device_detail_wake_from_suspend_sent">Paquet de réveil envoyé.</string>
+    <string name="device_detail_wake_from_suspend_error">Erreur</string>
+    <string name="device_detail_delete">Supprimer</string>
+    <string name="device_detail_delete_confirm_title">Supprimer cet appareil ?</string>
+    <string name="device_detail_delete_confirm_body">Ceci supprime uniquement l\'appairage sur ce téléphone. Le protocole PCBU ne propose aucun message de « désappairage » : pensez à aussi supprimer cet appareil côté PC si besoin.</string>
+    <string name="device_detail_macro_title">Macro post-déverrouillage</string>
+    <string name="device_detail_macro_none">Aucune macro configurée.</string>
+    <string name="device_detail_macro_summary">%1$d étape(s) configurée(s).</string>
+    <string name="device_detail_macro_edit">Modifier la macro</string>
+
+    <string name="macro_editor_title">Macro post-déverrouillage</string>
+    <string name="macro_editor_empty">Aucune étape. Touchez + pour en ajouter une.</string>
+    <string name="macro_editor_add_step">Ajouter une étape</string>
+    <string name="macro_editor_save">Enregistrer</string>
+    <string name="macro_editor_save_sent">Macro enregistrée et envoyée au PC.</string>
+    <string name="macro_editor_save_local_only">Macro enregistrée sur ce téléphone (échec de l\'envoi au PC : %1$s).</string>
+    <string name="macro_editor_save_no_key">Clé de chiffrement introuvable pour cet appareil ; macro enregistrée sur ce téléphone uniquement.</string>
+    <string name="macro_editor_move_up">Monter</string>
+    <string name="macro_editor_move_down">Descendre</string>
+    <string name="macro_editor_delete_step">Supprimer l\'étape</string>
+    <string name="macro_editor_step_type_key_combo">Raccourci</string>
+    <string name="macro_editor_step_type_timeout">Pause</string>
+    <string name="macro_editor_step_type_type_text">Texte</string>
+    <string name="macro_editor_step_summary_key_combo">Touches : %1$s</string>
+    <string name="macro_editor_step_summary_timeout">Attendre %1$d ms</string>
+    <string name="macro_editor_step_summary_type_text">Taper : « %1$s »</string>
+    <string name="macro_editor_timeout_label">Durée (ms)</string>
+    <string name="macro_editor_text_label">Texte à taper (ASCII uniquement)</string>
+    <string name="macro_editor_keys_label">Touches (au moins une)</string>
+    <string name="macro_editor_dialog_add">Ajouter</string>
+
+    <string name="pairing_scan_title">Appairer un PC</string>
+    <string name="pairing_scan_instructions">Scannez le QR code d\'appairage affiché par BioKey sur votre ordinateur.</string>
+    <string name="pairing_scan_button">Scanner le QR d\'appairage</string>
+    <string name="pairing_scan_manual_label">Ou coller le JSON du QR (test sans caméra)</string>
+    <string name="pairing_scan_manual_button">Appairer depuis le texte collé</string>
+    <string name="pairing_scan_cancelled">Scan annulé</string>
+    <string name="pairing_scan_camera_denied">Permission caméra refusée</string>
+    <string name="pairing_scan_error">Erreur d\'appairage</string>
+
+    <string name="onboarding_title">Bienvenue</string>
+    <string name="onboarding_body">Pour déverrouiller vos PC automatiquement, cette application a besoin d\'écouter en arrière-plan (notification permanente) et d\'accéder à la caméra pour scanner le QR d\'appairage.</string>
+    <string name="onboarding_battery_body">Sur certains téléphones (notamment Samsung), les optimisations de batterie peuvent tuer le service d\'écoute. Nous allons vous demander une exemption pour garantir un déverrouillage fiable.</string>
+    <string name="onboarding_continue">Continuer</string>
+
+    <string name="settings_title">Réglages</string>
+
+    <string name="settings_section_unlocking">Déverrouillage</string>
+    <string name="settings_direct_unlock">Déverrouillage direct</string>
+    <string name="settings_direct_unlock_desc">Affiche l\'invite d\'authentification biométrique immédiatement.</string>
+    <string name="settings_auto_unlock">Déverrouillage automatique</string>
+    <string name="settings_auto_unlock_warning">Réduit la sécurité : saute la vérification biométrique. Désactivé par défaut.</string>
+    <string name="settings_auto_unlock_only_if_phone_unlocked">Uniquement si le téléphone est déverrouillé</string>
+    <string name="settings_wearable_notification">Notification montre connectée</string>
+    <string name="settings_wearable_notification_desc">Permet d\'approuver le déverrouillage depuis une montre connectée, sans invite biométrique.</string>
+    <string name="settings_lock_on_wifi_disconnect">Verrouiller quand le téléphone s\'éloigne</string>
+    <string name="settings_lock_on_wifi_disconnect_desc">Le PC verrouille votre session quand il ne capte plus ce téléphone sur le Wi-Fi : hors de portée, Wi-Fi coupé, batterie vide…</string>
+    <string name="settings_lock_on_bluetooth">Verrouiller quand le PC ne capte plus le Bluetooth</string>
+    <string name="settings_lock_on_bluetooth_desc">Le téléphone émet un signal Bluetooth signé ; le PC verrouille votre session quand il ne le capte plus (hors de portée, Bluetooth coupé…). Le Bluetooth du PC doit être activé.</string>
+    <string name="settings_lock_timeout">Délai avant verrouillage</string>
+    <string name="settings_biometric_encryption">Chiffrement biométrique</string>
+    <string name="settings_biometric_encryption_desc">Renforce la sécurité : la clé de déverrouillage est chiffrée par le matériel du téléphone et ne peut être lue qu\'après une empreinte. Le déverrouillage automatique et les boutons de notification ne fonctionnent alors plus pour ces PC. S\'applique uniquement aux PC appairés après activation — réappairez les PC existants pour l\'appliquer.</string>
+    <string name="settings_select_user_on_wifi_connect">Présélectionner l\'utilisateur à la connexion</string>
+    <string name="settings_select_user_on_wifi_connect_desc">Présélectionne automatiquement votre compte sur l\'écran de connexion du PC (utile si plusieurs comptes y sont configurés) quand ce téléphone se connecte au Wi-Fi. Sur un PC verrouillé, fait apparaître la demande d\'empreinte.</string>
+
+    <string name="settings_section_service">Service</string>
+    <string name="settings_service_port">Port d\'écoute UDP : %1$d</string>
+    <string name="settings_service_start">Démarrer le service</string>
+    <string name="settings_service_stop">Arrêter le service</string>
+    <string name="tab_devices">Appareils</string>
+    <string name="tab_settings">Réglages</string>
+</resources>

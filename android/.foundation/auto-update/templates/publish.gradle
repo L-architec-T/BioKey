@@ -1,0 +1,57 @@
+// ── android-foundation auto-update : publication GitHub Release ─────────────────────────────
+// Source : Donova. Applied from build.gradle (`apply from: 'publish.gradle'`, after android {}).
+// Every assembleRelease publishes the signed APK as release v<versionName> on the PUBLIC repo
+// L-architec-T/<pkg> (APK only — no source is ever pushed there), asset <pkg>.apk
+// (fixed name: share links download it by name). The app's
+// UpdateManager polls that repo's /releases/latest. Notes come from release_notes.txt.
+// Version bump: the auto-versioning block at the top of build.gradle (version.properties, patch+1
+// on each release build) must also count 'publishGithubRelease' as a release task.
+
+def appTitle   = '__TITLE__'
+def ghRepo     = 'L-architec-T/__REPO__'
+def apkName    = '__ASSET__.apk'
+
+tasks.register('publishGithubRelease') {
+    dependsOn 'assembleRelease'
+    group = 'publishing'
+    description = "Build release APK and publish it to GitHub Releases (${ghRepo})"
+
+    doLast {
+        def tag       = "v${android.defaultConfig.versionName}"
+        def apkDir    = file("${buildDir}/outputs/apk/release")
+        def apk       = apkDir.listFiles()?.find { it.name.endsWith('.apk') && it.name != apkName }
+        def notesFile = file('release_notes.txt')
+        def notes     = notesFile.exists() && notesFile.text.trim() ? notesFile.text.trim() : '-'
+
+        if (apk == null) throw new GradleException("No release APK in $apkDir")
+        def asset = new File(apkDir, apkName)
+        if (apk != asset) java.nio.file.Files.copy(apk.toPath(), asset.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        apk = asset
+
+        def run = { List<String> cmd, boolean inherit ->
+            def pb = new ProcessBuilder(cmd.collect { it.toString() })
+            if (inherit) pb.inheritIO() else pb.redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectError(ProcessBuilder.Redirect.DISCARD)
+            pb.start().waitFor()
+        }
+
+        // Public APK-only repo, created on the very first publish (unauthenticated API polling
+        // from the app requires it to be public).
+        if (run(['gh', 'repo', 'view', ghRepo], false) != 0) {
+            if (run(['gh', 'repo', 'create', ghRepo, '--public', '--add-readme', '--description', "${appTitle} — APK releases"], true) != 0)
+                throw new GradleException("gh repo create $ghRepo failed")
+        }
+
+        // Idempotent re-publish of the same version.
+        run(['gh', 'release', 'delete', tag, '--repo', ghRepo, '--yes', '--cleanup-tag'], false)
+
+        def exitCode = run(['gh', 'release', 'create', tag, apk.absolutePath, '--repo', ghRepo,
+                            '--title', "${appTitle} ${tag}", '--notes', notes], true)
+        if (exitCode != 0) throw new GradleException("gh release create failed (exit $exitCode)")
+
+        println "✓ GitHub release $tag published → https://github.com/$ghRepo/releases/tag/$tag"
+    }
+}
+
+tasks.whenTaskAdded { task ->
+    if (task.name == 'assembleRelease') task.finalizedBy 'publishGithubRelease'
+}

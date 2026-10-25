@@ -1,4 +1,8 @@
-name: CMake
+name: Release
+# One tag = one release with every app: push `vX.Y.Z` (matching the repo-root VERSION file) and
+# this builds the Android APK and the desktop app for Windows/Linux/macOS, then publishes them
+# together. Nothing is published unless every build succeeded. Run it by hand
+# (workflow_dispatch) to build everything without publishing.
 on:
   workflow_dispatch:
   push:
@@ -12,7 +16,80 @@ env:
   QT_VERSION: 6.10.2
 
 jobs:
+  version:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{steps.read.outputs.version}}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check tag matches VERSION
+        id: read
+        shell: bash
+        run: |
+          version="$(tr -d '[:space:]' < VERSION)"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [[ "$GITHUB_REF_TYPE" == "tag" && "$GITHUB_REF_NAME" != "v$version" ]]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match VERSION ($version)."
+            exit 1
+          fi
+
+  build-android:
+    needs: version
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            17
+            21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Restore secrets
+        env:
+          GOOGLE_SERVICES_JSON: ${{secrets.GOOGLE_SERVICES_JSON}}
+          BIOKEY_KEYSTORE_BASE64: ${{secrets.BIOKEY_KEYSTORE_BASE64}}
+        run: |
+          printf '%s' "$GOOGLE_SERVICES_JSON" > app/google-services.json
+          printf '%s' "$BIOKEY_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/biokey-release.jks"
+
+      - name: Test and build signed APK (R8)
+        env:
+          BIOKEY_KEYSTORE_FILE: ${{runner.temp}}/biokey-release.jks
+          BIOKEY_STORE_PASSWORD: ${{secrets.BIOKEY_STORE_PASSWORD}}
+          BIOKEY_KEY_ALIAS: ${{secrets.BIOKEY_KEY_ALIAS}}
+          BIOKEY_KEY_PASSWORD: ${{secrets.BIOKEY_KEY_PASSWORD}}
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon :core:test :app:testDebugUnitTest :app:assembleRelease
+          # Fixed asset name: the in-app updater and share links download biokey.apk.
+          cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/biokey.apk"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: biokey.apk
+          path: ${{runner.temp}}/biokey.apk
+          if-no-files-found: error
+
+      - name: Upload R8 mapping
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-r8-mapping-${{needs.version.outputs.version}}
+          path: android/app/build/outputs/mapping/release/mapping.txt
+          retention-days: 90
+
   build-windows-x64:
+    needs: version
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -69,12 +146,14 @@ jobs:
           VCPKG_ROOT: ${{github.workspace}}/vcpkg
 
       - name: Upload x64
-        uses: softprops/action-gh-release@v3
+        uses: actions/upload-artifact@v4
         with:
-          files: |
-            pkg/build/BioKey-Setup-x64.exe
+          name: BioKey-Setup-x64.exe
+          path: pkg/build/BioKey-Setup-x64.exe
+          if-no-files-found: error
 
   build-windows-arm64:
+    needs: version
     runs-on: windows-11-vs2026-arm
     steps:
       - uses: actions/checkout@v7
@@ -162,12 +241,14 @@ jobs:
           VCPKG_ROOT: ${{github.workspace}}/vcpkg
 
       - name: Upload arm64
-        uses: softprops/action-gh-release@v3
+        uses: actions/upload-artifact@v4
         with:
-          files: |
-            pkg/build/BioKey-Setup-arm64.exe
+          name: BioKey-Setup-arm64.exe
+          path: pkg/build/BioKey-Setup-arm64.exe
+          if-no-files-found: error
 
   build-linux-x64:
+    needs: version
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
@@ -178,12 +259,14 @@ jobs:
         run: bash -c "cd ${{github.workspace}}/pkg/linux && chmod +x docker-build.sh && ARCH=x64 ./docker-build.sh"
 
       - name: Upload
-        uses: softprops/action-gh-release@v3
+        uses: actions/upload-artifact@v4
         with:
-          files: |
-            pkg/build/BioKey-x64.AppImage
+          name: BioKey-x64.AppImage
+          path: pkg/build/BioKey-x64.AppImage
+          if-no-files-found: error
 
   build-linux-arm64:
+    needs: version
     runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@v7
@@ -194,12 +277,14 @@ jobs:
         run: bash -c "cd ${{github.workspace}}/pkg/linux && chmod +x docker-build.sh && ARCH=arm64 ./docker-build.sh"
 
       - name: Upload
-        uses: softprops/action-gh-release@v3
+        uses: actions/upload-artifact@v4
         with:
-          files: |
-            pkg/build/BioKey-arm64.AppImage
+          name: BioKey-arm64.AppImage
+          path: pkg/build/BioKey-arm64.AppImage
+          if-no-files-found: error
 
   build-mac-arm64:
+    needs: version
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
@@ -222,7 +307,31 @@ jobs:
         run: bash -c "cd pkg && rm -Rf ./build/ && ARCH=arm64 QT_BASE_DIR=/opt/Qt/${{env.QT_VERSION}} CI_BUILD=1 ./build-desktop.sh"
 
       - name: Upload
-        uses: softprops/action-gh-release@v3
+        uses: actions/upload-artifact@v4
         with:
-          files: |
-            pkg/build/BioKey-arm64.dmg
+          name: BioKey-arm64.dmg
+          path: pkg/build/BioKey-arm64.dmg
+          if-no-files-found: error
+
+  publish:
+    if: github.ref_type == 'tag'
+    needs: [version, build-android, build-windows-x64, build-windows-arm64, build-linux-x64, build-linux-arm64, build-mac-arm64]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download builds
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{github.token}}
+        run: |
+          rm -f dist/mapping.txt # R8 mapping stays a workflow artifact, not a public download
+          ls -la dist
+          notes=(--generate-notes)
+          [[ -s RELEASE_NOTES.md ]] && notes=(--notes-file RELEASE_NOTES.md)
+          gh release create "$GITHUB_REF_NAME" dist/* --title "BioKey $GITHUB_REF_NAME" "${notes[@]}"

@@ -1,0 +1,94 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 2,
+    "identityHash": "aa189ee88215fef50c30144dea2489ce",
+    "entities": [
+      {
+        "tableName": "paired_devices",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`deviceId` TEXT NOT NULL, `deviceName` TEXT NOT NULL, `deviceOS` TEXT NOT NULL, `userName` TEXT NOT NULL, `unlockServerPort` INTEGER NOT NULL, `macAddressesCsv` TEXT NOT NULL, `pairingMethod` TEXT NOT NULL, `pairedAtEpochMs` INTEGER NOT NULL, `lastUnlockAtEpochMs` INTEGER, `lastUnlockResult` TEXT, `macroStepsJson` TEXT, PRIMARY KEY(`deviceId`))",
+        "fields": [
+          {
+            "fieldPath": "deviceId",
+            "columnName": "deviceId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deviceName",
+            "columnName": "deviceName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deviceOS",
+            "columnName": "deviceOS",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userName",
+            "columnName": "userName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unlockServerPort",
+            "columnName": "unlockServerPort",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "macAddressesCsv",
+            "columnName": "macAddressesCsv",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pairingMethod",
+            "columnName": "pairingMethod",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pairedAtEpochMs",
+            "columnName": "pairedAtEpochMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastUnlockAtEpochMs",
+            "columnName": "lastUnlockAtEpochMs",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "lastUnlockResult",
+            "columnName": "lastUnlockResult",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "macroStepsJson",
+            "columnName": "macroStepsJson",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "deviceId"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'aa189ee88215fef50c30144dea2489ce')"
+    ]
+  }
+}

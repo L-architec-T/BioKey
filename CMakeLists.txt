@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.22)
-project(pcbu_desktop_all)
+# One version for the whole repo (desktop + Android), read from VERSION and checked against the
+# release tag by .github/workflows/release.yml.
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" PCBU_APP_VERSION)
+string(STRIP "${PCBU_APP_VERSION}" PCBU_APP_VERSION)
+project(pcbu_desktop_all VERSION ${PCBU_APP_VERSION})
+add_compile_definitions(PCBU_APP_VERSION="${PCBU_APP_VERSION}")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(DetectArchitecture)

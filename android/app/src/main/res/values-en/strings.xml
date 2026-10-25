@@ -1,0 +1,100 @@
+<resources>
+    <string name="app_name">BioKey</string>
+    <string name="cancel">Cancel</string>
+
+    <string name="devices_title">Paired devices</string>
+    <string name="devices_add">Pair a PC</string>
+    <string name="devices_empty">No paired PC yet. Tap + to scan the QR code shown by the desktop app.</string>
+
+    <string name="device_detail_not_found">Device not found (deleted?).</string>
+    <string name="device_detail_user">User: %1$s</string>
+    <string name="device_detail_connection">Connection: %1$s</string>
+    <string name="device_detail_os">OS: %1$s</string>
+    <string name="device_detail_wake">Wake (Wake-on-LAN)</string>
+    <string name="device_detail_wake_no_mac">No known MAC address for this device.</string>
+    <string name="device_detail_wake_sent">Wake packet sent.</string>
+    <string name="device_detail_wake_error">Error</string>
+    <string name="device_detail_suspend">Suspend (deep sleep)</string>
+    <string name="device_detail_suspend_sent">Suspend command sent.</string>
+    <string name="device_detail_suspend_error">Error</string>
+    <string name="device_detail_suspend_no_key">Encryption key not found for this device.</string>
+    <string name="device_detail_delete">Delete</string>
+    <string name="device_detail_delete_confirm_title">Delete this device?</string>
+    <string name="device_detail_delete_confirm_body">This only removes the pairing on this phone. The PCBU protocol has no \"unpair\" message, so remember to also remove this device on the PC side if needed.</string>
+
+    <string name="pairing_scan_title">Pair a PC</string>
+    <string name="pairing_scan_instructions">Scan the QR code shown by BioKey on your computer (Pair button).</string>
+    <string name="pairing_scan_button">Scan pairing QR</string>
+    <string name="pairing_scan_manual_label">Or paste the QR\'s JSON (testing without a camera)</string>
+    <string name="pairing_scan_manual_button">Pair from pasted text</string>
+    <string name="pairing_scan_cancelled">Scan cancelled</string>
+    <string name="pairing_scan_camera_denied">Camera permission denied</string>
+    <string name="pairing_scan_error">Pairing error</string>
+
+    <string name="onboarding_title">Welcome</string>
+    <string name="onboarding_body">To unlock your PCs automatically, this app needs to listen in the background (a persistent notification) and to access the camera to scan the pairing QR code.</string>
+    <string name="onboarding_battery_body">On some phones (Samsung in particular), battery optimizations can kill the listening service. We\'ll ask for an exemption to keep unlocking reliable.</string>
+    <string name="onboarding_continue">Continue</string>
+
+    <string name="settings_title">Settings</string>
+
+    <string name="settings_section_unlocking">Unlocking</string>
+    <string name="settings_direct_unlock">Direct unlocking</string>
+    <string name="settings_direct_unlock_desc">Shows the biometric authentication prompt immediately.</string>
+    <string name="settings_auto_unlock">Auto unlock</string>
+    <string name="settings_auto_unlock_warning">Reduces security: skips the biometric check. Off by default.</string>
+    <string name="settings_auto_unlock_only_if_phone_unlocked">Only if the phone is unlocked</string>
+    <string name="settings_wearable_notification">Wearable notification</string>
+    <string name="settings_wearable_notification_desc">Allows approving the unlock from a paired watch, without a biometric prompt.</string>
+    <string name="settings_select_user_on_wifi_connect">Pre-select user at the greeter</string>
+    <string name="settings_select_user_on_wifi_connect_desc">Automatically pre-selects your account on the PC\'s login screen (useful if it has several accounts configured) when this phone connects to Wi-Fi. On a locked PC, brings up the fingerprint request.</string>
+    <string name="settings_biometric_encryption">Biometric encryption</string>
+    <string name="settings_biometric_encryption_desc">Stronger security: the unlock key is hardware-encrypted and can only be read after a fingerprint. Auto unlock and notification buttons then no longer work for those PCs. Only applies to PCs paired after this is turned on — re-pair existing PCs to apply it.</string>
+
+    <string name="settings_section_service">Service</string>
+    <string name="settings_service_port">UDP listen port: %1$d</string>
+    <string name="settings_service_start">Start service</string>
+    <string name="settings_service_stop">Stop service</string>
+
+    <string name="tab_devices">Devices</string>
+    <string name="tab_settings">Settings</string>
+    <string name="stats_devices">Devices</string>
+    <string name="stats_unlocks">Unlocks</string>
+    <string name="stats_macros">Macros</string>
+    <string name="stats_denied">Denied</string>
+
+    <string name="settings_lock_on_wifi_disconnect">Lock when the phone walks away</string>
+    <string name="settings_lock_on_wifi_disconnect_desc">The PC locks your session once it no longer sees this phone on Wi-Fi: out of range, Wi-Fi off, flat battery…</string>
+    <string name="settings_lock_on_bluetooth">Lock when the PC loses Bluetooth</string>
+    <string name="settings_lock_on_bluetooth_desc">The phone broadcasts a signed Bluetooth signal; the PC locks your session once it no longer picks it up (out of range, Bluetooth off…). The PC\'s Bluetooth must be on.</string>
+    <string name="settings_lock_timeout">Delay before locking</string>
+
+    <string name="device_detail_wake_from_suspend">Wake from deep sleep</string>
+    <string name="device_detail_wake_from_suspend_sent">Wake packet sent.</string>
+    <string name="device_detail_wake_from_suspend_error">Error</string>
+    <string name="device_detail_macro_title">Post-unlock macro</string>
+    <string name="device_detail_macro_none">No macro configured.</string>
+    <string name="device_detail_macro_summary">%1$d step(s) configured.</string>
+    <string name="device_detail_macro_edit">Edit macro</string>
+
+    <string name="macro_editor_title">Post-unlock macro</string>
+    <string name="macro_editor_empty">No steps. Tap + to add one.</string>
+    <string name="macro_editor_add_step">Add step</string>
+    <string name="macro_editor_save">Save</string>
+    <string name="macro_editor_save_sent">Macro saved and sent to the PC.</string>
+    <string name="macro_editor_save_local_only">Macro saved on this phone (sending to the PC failed: %1$s).</string>
+    <string name="macro_editor_save_no_key">No encryption key found for this device; macro saved on this phone only.</string>
+    <string name="macro_editor_move_up">Move up</string>
+    <string name="macro_editor_move_down">Move down</string>
+    <string name="macro_editor_delete_step">Delete step</string>
+    <string name="macro_editor_step_type_key_combo">Shortcut</string>
+    <string name="macro_editor_step_type_timeout">Pause</string>
+    <string name="macro_editor_step_type_type_text">Text</string>
+    <string name="macro_editor_step_summary_key_combo">Keys: %1$s</string>
+    <string name="macro_editor_step_summary_timeout">Wait %1$d ms</string>
+    <string name="macro_editor_step_summary_type_text">Type: “%1$s”</string>
+    <string name="macro_editor_timeout_label">Duration (ms)</string>
+    <string name="macro_editor_text_label">Text to type (ASCII only)</string>
+    <string name="macro_editor_keys_label">Keys (at least one)</string>
+    <string name="macro_editor_dialog_add">Add</string>
+</resources>

@@ -1,6 +1,8 @@
 [Setup]
 AppName=BioKey
-AppVerName=BioKey
+; AppVersion passed by build-desktop.sh from the repo-root VERSION file
+AppVersion={#AppVersion}
+AppVerName=BioKey {#AppVersion}
 WizardStyle=modern
 DefaultDirName={autopf}\PCBioUnlock
 DefaultGroupName=BioKey

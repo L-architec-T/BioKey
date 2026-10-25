@@ -1,0 +1,68 @@
+# android-foundation — catalogue de versions commun.
+# Déclaré dans chaque app sous le nom `foundation` (voir gradle/README.md) :
+#   implementation foundation.androidx.core.ktx
+# Bumper une version ICI, puis `scripts/foundation.sh sync` + build de chaque app.
+# Valeurs initiales = versions réellement en production dans CallUp/DFlow/Donova/qr_gen (2026-09-24).
+
+[versions]
+agp = "9.3.0"
+kotlin = "2.3.20"
+compileSdk = "37"
+targetSdk = "37"
+minSdk = "26"
+java = "17"
+
+composeBom = "2026.08.00"
+coreKtx = "1.12.0"
+lifecycle = "2.7.0"
+activityCompose = "1.8.2"
+navigationCompose = "2.8.5"
+datastore = "1.1.1"
+kyantBackdrop = "2.0.0"
+kyantShapes = "1.2.0"
+biometric = "1.1.0"
+securityCrypto = "1.1.0-alpha06"
+glance = "1.1.1"
+firebaseBom = "33.7.0"
+googleServices = "4.4.2"
+junit = "4.13.2"
+
+[libraries]
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
+androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
+androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
+
+compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
+compose-ui = { module = "androidx.compose.ui:ui" }
+compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
+compose-material3 = { module = "androidx.compose.material3:material3" }
+compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
+compose-animation = { module = "androidx.compose.animation:animation" }
+
+kyant-backdrop = { module = "io.github.kyant0:backdrop", version.ref = "kyantBackdrop" }
+kyant-shapes = { module = "io.github.kyant0:shapes", version.ref = "kyantShapes" }
+
+androidx-biometric = { module = "androidx.biometric:biometric", version.ref = "biometric" }
+androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "securityCrypto" }
+androidx-glance = { module = "androidx.glance:glance", version.ref = "glance" }
+androidx-glance-appwidget = { module = "androidx.glance:glance-appwidget", version.ref = "glance" }
+
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
+firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
+firebase-firestore = { module = "com.google.firebase:firebase-firestore" }
+
+junit = { module = "junit:junit", version.ref = "junit" }
+
+[bundles]
+compose-core = ["compose-ui", "compose-ui-graphics", "compose-material3", "compose-material-icons-extended", "compose-animation"]
+lifecycle-compose = ["androidx-lifecycle-runtime-ktx", "androidx-lifecycle-runtime-compose", "androidx-lifecycle-viewmodel-compose"]
+liquid-glass = ["kyant-backdrop", "kyant-shapes"]
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }

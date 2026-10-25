@@ -1,0 +1,20 @@
+name: CI Desktop
+# Every push touching the desktop app: Linux x64 build (same Docker image as the release).
+# The full Windows/macOS/arm64 matrix only runs in release.yml.
+on:
+  push:
+    branches: ["**"]
+    paths-ignore: ["android/**", "**.md"]
+  pull_request:
+    paths-ignore: ["android/**", "**.md"]
+
+jobs:
+  build-linux-x64:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Build docker
+        run: bash -c "cd ${{github.workspace}}/pkg/linux && chmod +x docker-build.sh && ARCH=x64 ./docker-build.sh"

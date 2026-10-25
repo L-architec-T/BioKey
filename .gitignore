@@ -11,3 +11,8 @@ pkg/build
 common/src/generated
 desktop/res/natives
 compile_commands.json
+# Android (android/): Gradle state, local SDK path, Firebase config (CI writes it from a secret)
+.gradle
+.kotlin
+android/local.properties
+android/app/google-services.json

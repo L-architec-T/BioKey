@@ -1,0 +1,38 @@
+name: CI Android
+# Every push touching the Android app: unit tests + a debug build. Releases go through release.yml.
+on:
+  push:
+    branches: ["**"]
+    paths: ["android/**", "VERSION", ".github/workflows/ci-android.yml"]
+  pull_request:
+    paths: ["android/**", "VERSION", ".github/workflows/ci-android.yml"]
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            17
+            21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Restore Firebase config
+        env:
+          GOOGLE_SERVICES_JSON: ${{secrets.GOOGLE_SERVICES_JSON}}
+        run: printf '%s' "$GOOGLE_SERVICES_JSON" > app/google-services.json
+
+      - name: Test and build
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon :core:test :app:testDebugUnitTest :app:assembleDebug

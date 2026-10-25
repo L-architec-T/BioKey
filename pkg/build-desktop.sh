@@ -95,7 +95,7 @@ if [[ "$PLATFORM" == "win" ]]; then
     rm installer_dir/opengl32sw.dll
   fi
 
-  iscc ../win/installer.iss
+  iscc "/DAppVersion=$(tr -d '[:space:]' < ../../VERSION)" ../win/installer.iss
   mv mysetup.exe BioKey-Setup-"$ARCH".exe
 elif [[ "$PLATFORM" == "linux" ]]; then
   wget "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-$LINUX_ARCH.AppImage" && chmod +x ./linuxdeploy-"$LINUX_ARCH".AppImage
