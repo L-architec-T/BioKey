@@ -20,7 +20,7 @@ public slots:
 
 private:
   static boost::filesystem::path GetDownloadDirectory();
-  static std::string GetDownloadURL();
+  static std::string GetDownloadURL(const std::string &version);
 
   QString m_LatestVersion{};
   std::mutex m_VersionMutex{};

@@ -6,7 +6,11 @@
 
 class RestClient {
 public:
-  static std::string CheckForUpdates(const std::string &product, const std::string &platform);
+  // Releases (desktop + Android) are published together on this repo by .github/workflows/release.yml.
+  static constexpr const char *GITHUB_REPO = "L-architec-T/BioKey";
+
+  // Version of the latest GitHub release ("v0.2.0" -> "0.2.0").
+  static std::string GetLatestVersion();
 
 private:
   RestClient() = default;

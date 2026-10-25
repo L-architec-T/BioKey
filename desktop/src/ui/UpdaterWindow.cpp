@@ -29,11 +29,34 @@ QString UpdaterWindow::GetLatestVersion() {
 }
 
 void UpdaterWindow::CheckForUpdates(QObject *window) {
-  (void)window;
+#ifdef LINUX
+  // Only an AppImage can replace itself; a source build or distro package updates its own way.
+  if(!std::getenv("APPIMAGE")) {
+    spdlog::info("Not running from an AppImage; skipping the update check.");
+    return;
+  }
+#endif
+  m_CheckThread = std::thread([this, window]() {
+    try {
+      auto latestVersion = RestClient::GetLatestVersion();
+      m_VersionMutex.lock();
+      m_LatestVersion = QString::fromUtf8(latestVersion);
+      m_VersionMutex.unlock();
+      spdlog::info("Latest version: {}", latestVersion);
+      if(AppInfo::CompareVersion(AppInfo::GetVersion(), latestVersion) == 1)
+        QMetaObject::invokeMethod(window, "showUpdaterWindow");
+    } catch(const std::exception &ex) {
+      spdlog::error("Failed checking for updates: {}", ex.what());
+      m_VersionMutex.lock();
+      m_LatestVersion = {};
+      m_VersionMutex.unlock();
+    }
+  });
 }
 
 void UpdaterWindow::OnDownloadClicked(QObject *window) {
-  m_DownloadThread = std::thread([window]() {
+  auto latestVersion = GetLatestVersion().toStdString();
+  m_DownloadThread = std::thread([window, latestVersion]() {
     std::vector<uint8_t> fileData{};
     auto contentCallback = [&](const char *data, size_t data_length) {
       auto oldSize = fileData.size();
@@ -50,10 +73,11 @@ void UpdaterWindow::OnDownloadClicked(QObject *window) {
       return true;
     };
 
-    httplib::Client client("https://meis-apps.com");
+    // GitHub answers with a redirect to its download CDN, hence follow_location.
+    httplib::Client client("https://github.com");
     client.set_connection_timeout(5, 0);
     client.set_follow_location(true);
-    auto result = client.Get(GetDownloadURL(), contentCallback, progressCallback);
+    auto result = client.Get(GetDownloadURL(latestVersion), contentCallback, progressCallback);
     if(!result || fileData.empty()) {
       auto errText = "Error downloading update.";
       spdlog::error(errText);
@@ -62,11 +86,11 @@ void UpdaterWindow::OnDownloadClicked(QObject *window) {
     }
     auto contentHeader = result->get_header_value("Content-Disposition");
 #ifdef WINDOWS
-    std::string downloadFileName = "Update-PCBioUnlock.exe";
+    std::string downloadFileName = "Update-BioKey.exe";
 #elif LINUX
-    std::string downloadFileName = "Update-PCBioUnlock.AppImage";
+    std::string downloadFileName = "Update-BioKey.AppImage";
 #elif APPLE
-    std::string downloadFileName = "Update-PCBioUnlock.dmg";
+    std::string downloadFileName = "Update-BioKey.dmg";
 #endif
     std::regex regex(R"(.*filename=\"(.*)\")");
     std::smatch matches{};
@@ -132,14 +156,15 @@ boost::filesystem::path UpdaterWindow::GetDownloadDirectory() {
 #endif
 }
 
-std::string UpdaterWindow::GetDownloadURL() {
-  auto os = AppInfo::GetOperatingSystem();
+// Asset names as published by .github/workflows/release.yml.
+std::string UpdaterWindow::GetDownloadURL(const std::string &version) {
   auto arch = AppInfo::GetArchitecture();
-  if(os == "Windows")
-    os = "win";
-  if(os == "Linux")
-    os = "linux";
-  if(os == "macOS")
-    os = "mac";
-  return fmt::format("/download?product=PCBioUnlock&platform={}_{}", os, arch);
+#ifdef WINDOWS
+  auto asset = fmt::format("BioKey-Setup-{}.exe", arch);
+#elif LINUX
+  auto asset = fmt::format("BioKey-{}.AppImage", arch);
+#elif APPLE
+  auto asset = fmt::format("BioKey-{}.dmg", arch);
+#endif
+  return fmt::format("/{}/releases/download/v{}/{}", RestClient::GITHUB_REPO, version, asset);
 }
