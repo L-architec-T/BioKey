@@ -638,11 +638,12 @@ class UnlockForegroundService : Service() {
     }
 
     private fun showAutoUnlockNotification(deviceName: String, program: AuthProgram) {
-        val text = program.elevation?.let { "Droits $it accordés automatiquement — $deviceName" }
-            ?: "$deviceName déverrouillé automatiquement"
+        // The user only cares whether the PC was opened or an action was allowed, not which
+        // elevation program (sudo, polkit…) asked, so it is shown as the password it replaces.
+        val title = if (program.isElevation) "Mot de passe envoyé automatiquement à $deviceName"
+            else "$deviceName déverrouillé automatiquement"
         val notification = Notification.Builder(this, CHALLENGE_CHANNEL_ID)
-            .setContentTitle("BioKey")
-            .setContentText(text)
+            .setContentTitle(title)
             .setSmallIcon(R.drawable.ic_notification_fingerprint)
             .setCategory(Notification.CATEGORY_STATUS)
             .setAutoCancel(true)
@@ -652,10 +653,9 @@ class UnlockForegroundService : Service() {
 
     /** The PC only shows a generic APP_ERROR, so the actual reason and fix are spelled out here. */
     private fun showKeyUnavailableNotification(deviceName: String) {
-        val text = "Impossible de déverrouiller $deviceName : la clé protégée par empreinte n'est plus valide " +
-            "(empreinte ajoutée ou modifiée). Supprimez puis réappairez ce PC."
+        val text = "Empreinte ajoutée ou modifiée sur ce téléphone : supprimez puis réappairez ce PC."
         val notification = Notification.Builder(this, CHALLENGE_CHANNEL_ID)
-            .setContentTitle("BioKey — réappairage nécessaire")
+            .setContentTitle("Déverrouillage impossible sur $deviceName")
             .setContentText(text)
             .setStyle(Notification.BigTextStyle().bigText(text))
             .setSmallIcon(R.drawable.ic_notification_fingerprint)
@@ -666,10 +666,9 @@ class UnlockForegroundService : Service() {
     }
 
     private fun showUnlockSuccessNotification(deviceName: String, program: AuthProgram) {
-        val text = program.elevation?.let { "Droits $it accordés — $deviceName" } ?: "$deviceName déverrouillé"
+        val title = if (program.isElevation) "Mot de passe envoyé à $deviceName" else "$deviceName déverrouillé"
         val notification = Notification.Builder(this, CHALLENGE_CHANNEL_ID)
-            .setContentTitle("BioKey")
-            .setContentText(text)
+            .setContentTitle(title)
             .setSmallIcon(R.drawable.ic_notification_fingerprint)
             .setCategory(Notification.CATEGORY_STATUS)
             .setAutoCancel(true)
@@ -690,9 +689,11 @@ class UnlockForegroundService : Service() {
             this, notificationId, challengeIntent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
-        val text = program.elevation?.let { "Droits $it demandés — $deviceName" } ?: "Déverrouiller $deviceName ?"
+        val title = if (program.isElevation) "$deviceName demande votre mot de passe" else "Déverrouiller $deviceName ?"
+        val text = if (program.isElevation) "Touchez pour utiliser votre empreinte."
+            else "Touchez pour confirmer avec votre empreinte."
         val builder = Notification.Builder(this, CHALLENGE_CHANNEL_ID)
-            .setContentTitle("BioKey")
+            .setContentTitle(title)
             .setContentText(text)
             .setSmallIcon(R.drawable.ic_notification_fingerprint)
             .setCategory(Notification.CATEGORY_CALL)

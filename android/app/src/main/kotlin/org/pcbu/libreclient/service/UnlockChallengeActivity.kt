@@ -75,7 +75,7 @@ class UnlockChallengeActivity : FragmentActivity() {
             MaterialTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent) {
                     Text(
-                        program.elevation?.let { "Autoriser $it sur $deviceName ?\n$user" }
+                        (if (program.isElevation) "$deviceName demande votre mot de passe\n$user" else null)
                             ?: "Déverrouiller $deviceName ?\n$user",
                         modifier = Modifier.padding(24.dp),
                     )
@@ -113,7 +113,7 @@ class UnlockChallengeActivity : FragmentActivity() {
                 ChallengeResolution.KeyUnavailable
             } else {
                 val result = UnlockBiometricAuthenticator(this@UnlockChallengeActivity).authenticate(
-                    title = program.elevation?.let { "Autoriser $it sur $deviceName" } ?: "Déverrouiller $deviceName",
+                    title = if (program.isElevation) "Mot de passe pour $deviceName" else "Déverrouiller $deviceName",
                     subtitle = user,
                     negativeButtonText = "Annuler",
                     cryptoCipher = decryption?.cipher,
