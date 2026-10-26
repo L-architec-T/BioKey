@@ -536,7 +536,11 @@ class UnlockForegroundService : Service() {
             Log.d(TAG, "readChallenge() succeeded for user ${challenge.user}") // TEMP diagnostic (2026-08-22)
 
             var passwordKeyOverride: String? = null
-            val approved = if (shouldAutoUnlock()) {
+            var keyUnavailable = false
+            // A biometric-gated passwordKey only comes out of the fingerprint prompt, so auto
+            // unlock and the notification's direct button would just send APP_ERROR to the PC.
+            val gated = secrets.isPasswordKeyBiometricGated(device.deviceId)
+            val approved = if (!gated && shouldAutoUnlock()) {
                 // Auto unlock skips the biometric prompt entirely (see shouldAutoUnlock below),
                 // so this is the only signal the user gets that their PC was just unlocked
                 // without their direct confirmation.
@@ -560,11 +564,12 @@ class UnlockForegroundService : Service() {
                 // already on it still shows immediately as a heads-up the user can tap.
                 showChallengeNotification(
                     notificationId, challengeIntent, requestId, device.deviceName, AuthProgram.parse(challenge.program),
-                    directUnlock = preferences.directUnlockEnabled.first(),
+                    directUnlock = !gated && preferences.directUnlockEnabled.first(),
                     wearableNotification = preferences.wearableNotificationEnabled.first(),
                 )
                 val resolution = withTimeoutOrNull(BIOMETRIC_PROMPT_TIMEOUT_MS) { deferred.await() } ?: ChallengeResolution.Denied
                 getSystemService(NotificationManager::class.java).cancel(notificationId)
+                if (resolution is ChallengeResolution.KeyUnavailable) keyUnavailable = true
                 if (resolution is ChallengeResolution.Approved) {
                     passwordKeyOverride = resolution.passwordKeyOverride
                     showUnlockSuccessNotification(device.deviceName, AuthProgram.parse(challenge.program))
@@ -583,8 +588,12 @@ class UnlockForegroundService : Service() {
                         preferences.incrementUnlockSuccess()
                     } else {
                         Log.w(TAG, "no passwordKey stored for device ${device.deviceId}; responding APP_ERROR") // TEMP diagnostic (2026-08-22)
+                        showKeyUnavailableNotification(device.deviceName)
                         it.respondError(UnlockErrors.APP_ERROR)
                     }
+                } else if (keyUnavailable) {
+                    showKeyUnavailableNotification(device.deviceName)
+                    it.respondError(UnlockErrors.APP_ERROR)
                 } else {
                     preferences.incrementUnlockDenied()
                     it.respondError(UnlockErrors.CANCEL)
@@ -636,6 +645,21 @@ class UnlockForegroundService : Service() {
             .setContentText(text)
             .setSmallIcon(R.drawable.ic_notification_fingerprint)
             .setCategory(Notification.CATEGORY_STATUS)
+            .setAutoCancel(true)
+            .build()
+        getSystemService(NotificationManager::class.java).notify(notificationIdCounter.incrementAndGet(), notification)
+    }
+
+    /** The PC only shows a generic APP_ERROR, so the actual reason and fix are spelled out here. */
+    private fun showKeyUnavailableNotification(deviceName: String) {
+        val text = "Impossible de déverrouiller $deviceName : la clé protégée par empreinte n'est plus valide " +
+            "(empreinte ajoutée ou modifiée). Supprimez puis réappairez ce PC."
+        val notification = Notification.Builder(this, CHALLENGE_CHANNEL_ID)
+            .setContentTitle("BioKey — réappairage nécessaire")
+            .setContentText(text)
+            .setStyle(Notification.BigTextStyle().bigText(text))
+            .setSmallIcon(R.drawable.ic_notification_fingerprint)
+            .setCategory(Notification.CATEGORY_ERROR)
             .setAutoCancel(true)
             .build()
         getSystemService(NotificationManager::class.java).notify(notificationIdCounter.incrementAndGet(), notification)

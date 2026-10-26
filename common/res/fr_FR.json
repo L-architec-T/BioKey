@@ -28,7 +28,7 @@
   "unlock_error_time": "Erreur : l'heure du PC ne correspond pas à celle du téléphone.",
   "unlock_error_data": "Erreur : données reçues invalides.",
   "unlock_error_not_paired": "Erreur : non appairé sur le téléphone.",
-  "unlock_error_app": "Erreur d'application inconnue. Veuillez contacter le support.",
+  "unlock_error_app": "Le téléphone n'a pas pu fournir le mot de passe. Ouvrez BioKey sur le téléphone : réappairez ce PC si demandé.",
   "unlock_error_unknown": "Erreur inconnue. Veuillez contacter le support.",
 
   "service_module": "Module de service",

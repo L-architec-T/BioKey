@@ -105,12 +105,12 @@ class UnlockChallengeActivity : FragmentActivity() {
 
         lifecycleScope.launch {
             // Biometric-gated passwordKey: the prompt itself decrypts it. Gated but no usable
-            // cipher (key invalidated by a new fingerprint) can never succeed, so deny outright.
+            // cipher (key invalidated by a new fingerprint) can never succeed, so say so outright.
             val secrets = SecretsStore(this@UnlockChallengeActivity)
             val gated = deviceId?.let { secrets.isPasswordKeyBiometricGated(it) } == true
             val decryption = deviceId?.let { secrets.preparePasswordKeyDecryption(it) }
             val resolution = if (gated && decryption == null) {
-                ChallengeResolution.Denied
+                ChallengeResolution.KeyUnavailable
             } else {
                 val result = UnlockBiometricAuthenticator(this@UnlockChallengeActivity).authenticate(
                     title = program.elevation?.let { "Autoriser $it sur $deviceName" } ?: "Déverrouiller $deviceName",

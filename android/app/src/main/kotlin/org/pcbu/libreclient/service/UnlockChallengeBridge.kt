@@ -27,4 +27,6 @@ sealed class ChallengeResolution {
     /** [passwordKeyOverride]: the passwordKey decrypted through the prompt, for a biometric-gated device. */
     data class Approved(val passwordKeyOverride: String? = null) : ChallengeResolution()
     data object Denied : ChallengeResolution()
+    /** Biometric-gated passwordKey whose Keystore key is gone (new fingerprint enrolled): only re-pairing fixes it. */
+    data object KeyUnavailable : ChallengeResolution()
 }

@@ -28,7 +28,7 @@
   "unlock_error_time": "Error: Time on PC does not match phone time.",
   "unlock_error_data": "Error: Invalid data received.",
   "unlock_error_not_paired": "Error: Not paired on phone.",
-  "unlock_error_app": "Unknown app error. Please contact support.",
+  "unlock_error_app": "The phone could not provide the password. Open BioKey on the phone and re-pair this PC if asked.",
   "unlock_error_unknown": "Unknown error. Please contact support.",
 
   "service_module": "Service module",
