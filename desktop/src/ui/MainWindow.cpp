@@ -69,7 +69,9 @@ bool MainWindow::PerformStartupChecks(QObject *viewLoader, QObject *window) {
 #endif
 #endif
   const auto installedVersion = AppSettings::Get().installedVersion;
-  if(ServiceInstaller::IsInstalled() && (AppInfo::CompareVersion(installedVersion, AppInfo::GetVersion()) == 1 || installedVersion.empty()))
+  // Any mismatch, not only an older one: BioKey restarted at 0.x after the upstream 3.x
+  // numbering, so modules installed by 3.3.4 looked newer and were never refreshed.
+  if(ServiceInstaller::IsInstalled() && (AppInfo::CompareVersion(installedVersion, AppInfo::GetVersion()) != 0 || installedVersion.empty()))
     OnReinstallClicked(window);
   return true;
 }

@@ -31,6 +31,12 @@ ApplicationWindow {
             Label {
                 id: lblUnlockMsg
                 anchors.centerIn: parent
+                width: parent.width - 40
+                wrapMode: Text.WordWrap
+                fontSizeMode: Text.VerticalFit
+                height: parent.height - 20
+                verticalAlignment: Text.AlignVCenter
+                minimumPixelSize: 14
                 font.pixelSize: 28
                 font.weight: Font.DemiBold
                 horizontalAlignment: Text.AlignHCenter

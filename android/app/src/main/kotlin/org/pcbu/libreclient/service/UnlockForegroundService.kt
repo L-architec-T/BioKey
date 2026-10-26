@@ -538,7 +538,7 @@ class UnlockForegroundService : Service() {
             var passwordKeyOverride: String? = null
             var keyUnavailable = false
             // A biometric-gated passwordKey only comes out of the fingerprint prompt, so auto
-            // unlock and the notification's direct button would just send APP_ERROR to the PC.
+            // unlock and the watch notification's Approve button would just send APP_ERROR to the PC.
             val gated = secrets.isPasswordKeyBiometricGated(device.deviceId)
             val approved = if (!gated && shouldAutoUnlock()) {
                 // Auto unlock skips the biometric prompt entirely (see shouldAutoUnlock below),
@@ -564,8 +564,8 @@ class UnlockForegroundService : Service() {
                 // already on it still shows immediately as a heads-up the user can tap.
                 showChallengeNotification(
                     notificationId, challengeIntent, requestId, device.deviceName, AuthProgram.parse(challenge.program),
-                    directUnlock = !gated && preferences.directUnlockEnabled.first(),
-                    wearableNotification = preferences.wearableNotificationEnabled.first(),
+                    directUnlock = preferences.directUnlockEnabled.first(),
+                    wearableNotification = !gated && preferences.wearableNotificationEnabled.first(),
                 )
                 val resolution = withTimeoutOrNull(BIOMETRIC_PROMPT_TIMEOUT_MS) { deferred.await() } ?: ChallengeResolution.Denied
                 getSystemService(NotificationManager::class.java).cancel(notificationId)

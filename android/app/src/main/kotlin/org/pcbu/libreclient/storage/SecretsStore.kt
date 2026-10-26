@@ -3,8 +3,10 @@ package org.pcbu.libreclient.storage
 import android.content.Context
 import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyProperties
 import android.util.Base64
+import android.util.Log
 import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.PrivateKey
@@ -71,7 +73,7 @@ class SecretsStore(context: Context) {
             val cipher = Cipher.getInstance(RSA_TRANSFORMATION)
             cipher.init(Cipher.DECRYPT_MODE, privateKey, oaepParams())
             BiometricDecryption(cipher, ciphertext)
-        }.getOrNull()
+        }.onFailure { Log.w(TAG, "biometric passwordKey unusable for $deviceId", it) }.getOrNull()
     }
 
     fun deleteDevice(deviceId: String) {
@@ -128,6 +130,9 @@ class SecretsStore(context: Context) {
     }
 
     private fun getOrCreateBiometricPublicKey(): PublicKey {
+        // An invalidated key (new fingerprint enrolled) keeps its certificate, so encrypting a
+        // fresh pairing with it would only produce another passwordKey that can never decrypt.
+        if (isBiometricKeyInvalidated()) keyStore.deleteEntry(BIOMETRIC_KEY_ALIAS)
         keyStore.getCertificate(BIOMETRIC_KEY_ALIAS)?.let { return it.publicKey }
 
         val generator = KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_RSA, ANDROID_KEYSTORE)
@@ -150,6 +155,18 @@ class SecretsStore(context: Context) {
         return generator.generateKeyPair().public
     }
 
+    private fun isBiometricKeyInvalidated(): Boolean {
+        val privateKey = runCatching { keyStore.getKey(BIOMETRIC_KEY_ALIAS, null) as? PrivateKey }.getOrNull() ?: return false
+        return try {
+            Cipher.getInstance(RSA_TRANSFORMATION).init(Cipher.DECRYPT_MODE, privateKey, oaepParams())
+            false
+        } catch (e: KeyPermanentlyInvalidatedException) {
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     // MGF1 stays SHA-1: it's the only MGF1 digest Android Keystore authorizes for an OAEP key by default
     // (setMgf1Digests is API 35+), so anything else encrypts fine but fails to decrypt.
     private fun oaepParams() = OAEPParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA1, PSource.PSpecified.DEFAULT)
@@ -158,6 +175,7 @@ class SecretsStore(context: Context) {
     private fun passwordKeyPrefKey(deviceId: String) = "$deviceId.passwordKey"
 
     companion object {
+        private const val TAG = "SecretsStore"
         private const val PREFS_NAME = "pcbu_secrets"
         private const val ANDROID_KEYSTORE = "AndroidKeyStore"
         private const val MASTER_KEY_ALIAS = "pcbu_master_key"
