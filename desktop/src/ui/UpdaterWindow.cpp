@@ -118,7 +118,11 @@ void UpdaterWindow::OnDownloadClicked(QObject *window) {
     auto appImagePath = std::getenv("APPIMAGE");
     if(appImagePath)
       dstPath = boost::filesystem::path(appImagePath);
-    updateCmd = fmt::format("while ps -p {0} > /dev/null 2>&1; do sleep 1; done && mv {1} {2} && {2}", getpid(), dlPath.string(), dstPath.string());
+    // The relaunch must not keep this process's stdout/stderr: they belong to pkexec, which
+    // exits with us, and the new instance then died of SIGPIPE on its first Qt warning, so the
+    // modules were only refreshed when the user opened BioKey a second time.
+    updateCmd = fmt::format("while ps -p {0} > /dev/null 2>&1; do sleep 1; done && mv '{1}' '{2}' && setsid '{2}' < /dev/null > /dev/null 2>&1",
+                            getpid(), dlPath.string(), dstPath.string());
 #endif
     spdlog::info("Starting update...");
     Shell::SpawnCommand(updateCmd);

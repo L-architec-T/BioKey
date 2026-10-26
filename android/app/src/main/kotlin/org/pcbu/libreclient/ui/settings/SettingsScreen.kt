@@ -1,5 +1,12 @@
 package org.pcbu.libreclient.ui.settings
 
+import org.pcbu.libreclient.pairing.PairingRepository
+import androidx.compose.material3.TextButton
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import android.provider.Settings
+import android.net.Uri
+import android.content.Intent
+import android.app.NotificationManager
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import org.pcbu.libreclient.premium.PremiumFeature
@@ -72,6 +79,7 @@ fun SettingsScreen(preferencesStore: PreferencesStore, modifier: Modifier = Modi
     val lockTimeoutSeconds by preferencesStore.lockTimeoutSeconds.collectAsState(initial = PreferencesStore.DEFAULT_LOCK_TIMEOUT_SECONDS)
     val selectUserOnWifiConnect by preferencesStore.selectUserOnWifiConnectEnabled.collectAsState(initial = false)
     val biometricEncryption by preferencesStore.biometricEncryptionEnabled.collectAsState(initial = false)
+    val pairingRepository = remember { PairingRepository(context) }
     val serviceRunning by UnlockForegroundService.isRunning.collectAsState()
     val premium = remember { PremiumAccess.get(context) }
     val isPremium by premium.isPremium.collectAsState(initial = true)
@@ -113,8 +121,12 @@ fun SettingsScreen(preferencesStore: PreferencesStore, modifier: Modifier = Modi
                 title = stringResource(R.string.settings_direct_unlock),
                 subtitle = stringResource(R.string.settings_direct_unlock_desc),
                 checked = directUnlock,
-                onCheckedChange = { scope.launch { preferencesStore.setDirectUnlockEnabled(it) } },
+                onCheckedChange = {
+                    scope.launch { preferencesStore.setDirectUnlockEnabled(it) }
+                    if (it) requestFullScreenIntentPermission(context)
+                },
             )
+            if (directUnlock) DirectUnlockPermissions()
             SettingsSwitchRow(
                 title = stringResource(R.string.settings_auto_unlock),
                 subtitle = stringResource(R.string.settings_auto_unlock_warning),
@@ -184,7 +196,7 @@ fun SettingsScreen(preferencesStore: PreferencesStore, modifier: Modifier = Modi
                 title = stringResource(R.string.settings_biometric_encryption),
                 subtitle = stringResource(R.string.settings_biometric_encryption_desc),
                 checked = biometricEncryption,
-                onCheckedChange = { scope.launch { preferencesStore.setBiometricEncryptionEnabled(it) } },
+                onCheckedChange = { scope.launch { pairingRepository.setBiometricEncryption(it) } },
             )
         }
 
@@ -215,6 +227,38 @@ fun SettingsScreen(preferencesStore: PreferencesStore, modifier: Modifier = Modi
     }
 
     premiumDialog?.let { feature -> PremiumDialog(feature, onDismiss = { premiumDialog = null }) }
+}
+
+/** What still keeps "Déverrouillage direct" from opening the prompt by itself, re-checked each
+ * time the user comes back from the system settings. */
+@Composable
+private fun DirectUnlockPermissions() {
+    val context = LocalContext.current
+    var fullScreenOk by remember { mutableStateOf(true) }
+    var overlayOk by remember { mutableStateOf(true) }
+    LifecycleResumeEffect(Unit) {
+        fullScreenOk = Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE ||
+            context.getSystemService(NotificationManager::class.java)?.canUseFullScreenIntent() != false
+        overlayOk = Settings.canDrawOverlays(context)
+        onPauseOrDispose {}
+    }
+    if (!fullScreenOk) PermissionHint(stringResource(R.string.settings_direct_unlock_fullscreen_missing)) {
+        requestFullScreenIntentPermission(context)
+    }
+    if (!overlayOk) PermissionHint(stringResource(R.string.settings_direct_unlock_overlay_missing)) {
+        val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}"))
+        runCatching { context.startActivity(intent) }
+    }
+}
+
+@Composable
+private fun PermissionHint(text: String, onAllow: () -> Unit) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(text, style = MaterialTheme.typography.bodySmall, color = TextSecondary, modifier = Modifier.weight(1f))
+        TextButton(onClick = onAllow) {
+            Text(stringResource(R.string.settings_direct_unlock_allow), color = Accent)
+        }
+    }
 }
 
 private fun premiumSubtitle(isPremium: Boolean, description: String) =

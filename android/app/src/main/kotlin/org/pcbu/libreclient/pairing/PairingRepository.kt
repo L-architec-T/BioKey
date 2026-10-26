@@ -76,6 +76,14 @@ class PairingRepository(context: Context) {
         db.pairedDeviceDao().updateMacroSteps(deviceId, macroStepsJson)
     }
 
+    /** Applies "Chiffrement biométrique" to the PCs already paired. Turning it on gates every
+     * passwordKey now; turning it off can't decrypt them without a fingerprint, so each one is
+     * stored plain again on its next unlock instead (see UnlockForegroundService). */
+    suspend fun setBiometricEncryption(enabled: Boolean) = withContext(Dispatchers.IO) {
+        preferences.setBiometricEncryptionEnabled(enabled)
+        if (enabled) db.pairedDeviceDao().getAll().forEach { secrets.gatePasswordKeyWithBiometric(it.deviceId) }
+    }
+
     fun observeDevices() = db.pairedDeviceDao().observeAll()
 
     fun observeDevice(deviceId: String) = db.pairedDeviceDao().observeById(deviceId)

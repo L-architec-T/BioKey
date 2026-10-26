@@ -68,7 +68,10 @@
 
     <string name="settings_section_unlocking">Déverrouillage</string>
     <string name="settings_direct_unlock">Déverrouillage direct</string>
-    <string name="settings_direct_unlock_desc">Affiche l\'invite d\'authentification biométrique immédiatement.</string>
+    <string name="settings_direct_unlock_desc">Affiche la demande d\'empreinte sans avoir à toucher la notification.</string>
+    <string name="settings_direct_unlock_fullscreen_missing">Android bloque l\'affichage quand l\'écran est éteint ou verrouillé : autorisez les notifications plein écran.</string>
+    <string name="settings_direct_unlock_overlay_missing">Pour l\'afficher aussi pendant que vous utilisez le téléphone, autorisez « Superposition sur d\'autres applis ».</string>
+    <string name="settings_direct_unlock_allow">Autoriser</string>
     <string name="settings_auto_unlock">Déverrouillage automatique</string>
     <string name="settings_auto_unlock_warning">Réduit la sécurité : saute la vérification biométrique. Désactivé par défaut.</string>
     <string name="settings_auto_unlock_only_if_phone_unlocked">Uniquement si le téléphone est déverrouillé</string>
@@ -80,7 +83,7 @@
     <string name="settings_lock_on_bluetooth_desc">Le téléphone émet un signal Bluetooth signé ; le PC verrouille votre session quand il ne le capte plus (hors de portée, Bluetooth coupé…). Le Bluetooth du PC doit être activé.</string>
     <string name="settings_lock_timeout">Délai avant verrouillage</string>
     <string name="settings_biometric_encryption">Chiffrement biométrique</string>
-    <string name="settings_biometric_encryption_desc">Renforce la sécurité : la clé de déverrouillage est chiffrée par le matériel du téléphone et ne peut être lue qu\'après une empreinte. Le déverrouillage automatique et les boutons de notification ne fonctionnent alors plus pour ces PC. S\'applique uniquement aux PC appairés après activation — réappairez les PC existants pour l\'appliquer.</string>
+    <string name="settings_biometric_encryption_desc">Renforce la sécurité : la clé de déverrouillage est chiffrée par le matériel du téléphone et ne peut être lue qu\'après une empreinte. Le déverrouillage automatique et les boutons de notification ne fonctionnent alors plus. Désactivé, chaque PC repasse sans chiffrement à son prochain déverrouillage. Dans les deux cas, l\'empreinte reste demandée pour confirmer chaque déverrouillage (sauf déverrouillage automatique).</string>
     <string name="settings_select_user_on_wifi_connect">Présélectionner l\'utilisateur à la connexion</string>
     <string name="settings_select_user_on_wifi_connect_desc">Présélectionne automatiquement votre compte sur l\'écran de connexion du PC (utile si plusieurs comptes y sont configurés) quand ce téléphone se connecte au Wi-Fi. Sur un PC verrouillé, fait apparaître la demande d\'empreinte.</string>
 

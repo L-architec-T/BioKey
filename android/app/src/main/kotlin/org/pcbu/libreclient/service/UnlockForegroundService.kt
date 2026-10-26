@@ -12,6 +12,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.graphics.drawable.Icon
+import android.provider.Settings
 import android.media.AudioAttributes
 import android.net.ConnectivityManager
 import android.net.Network
@@ -599,11 +600,24 @@ class UnlockForegroundService : Service() {
                     directUnlock = preferences.directUnlockEnabled.first(),
                     wearableNotification = !gated && preferences.wearableNotificationEnabled.first(),
                 )
+                // The full-screen intent only takes over a locked or dark screen; on a phone in
+                // use it stays a heads-up to tap. With "draw over other apps" granted, Android
+                // lets a background service start the prompt itself (the notification stays as
+                // a fallback, and tapping it just reaches the same singleTop activity).
+                if (preferences.directUnlockEnabled.first() && Settings.canDrawOverlays(this@UnlockForegroundService)) {
+                    runCatching { startActivity(challengeIntent) }.onFailure { Log.w(TAG, "direct prompt launch failed", it) }
+                }
                 val resolution = withTimeoutOrNull(BIOMETRIC_PROMPT_TIMEOUT_MS) { deferred.await() } ?: ChallengeResolution.Denied
                 getSystemService(NotificationManager::class.java).cancel(notificationId)
                 if (resolution is ChallengeResolution.KeyUnavailable) keyUnavailable = true
                 if (resolution is ChallengeResolution.Approved) {
                     passwordKeyOverride = resolution.passwordKeyOverride
+                    // "Chiffrement biométrique" turned off since pairing: the fingerprint just
+                    // decrypted the key, the only moment it can be stored plain again.
+                    val plainKey = resolution.passwordKeyOverride
+                    if (gated && plainKey != null && !preferences.biometricEncryptionEnabled.first()) {
+                        secrets.storePasswordKey(device.deviceId, plainKey, useBiometricGate = false)
+                    }
                     showUnlockSuccessNotification(device.deviceName, AuthProgram.parse(challenge.program))
                 }
                 resolution is ChallengeResolution.Approved

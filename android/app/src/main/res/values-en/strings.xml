@@ -36,7 +36,10 @@
 
     <string name="settings_section_unlocking">Unlocking</string>
     <string name="settings_direct_unlock">Direct unlocking</string>
-    <string name="settings_direct_unlock_desc">Shows the biometric authentication prompt immediately.</string>
+    <string name="settings_direct_unlock_desc">Shows the fingerprint prompt without having to tap the notification.</string>
+    <string name="settings_direct_unlock_fullscreen_missing">Android blocks it while the screen is off or locked: allow full-screen notifications.</string>
+    <string name="settings_direct_unlock_overlay_missing">To also show it while you use the phone, allow “Display over other apps”.</string>
+    <string name="settings_direct_unlock_allow">Allow</string>
     <string name="settings_auto_unlock">Auto unlock</string>
     <string name="settings_auto_unlock_warning">Reduces security: skips the biometric check. Off by default.</string>
     <string name="settings_auto_unlock_only_if_phone_unlocked">Only if the phone is unlocked</string>
@@ -45,7 +48,7 @@
     <string name="settings_select_user_on_wifi_connect">Pre-select user at the greeter</string>
     <string name="settings_select_user_on_wifi_connect_desc">Automatically pre-selects your account on the PC\'s login screen (useful if it has several accounts configured) when this phone connects to Wi-Fi. On a locked PC, brings up the fingerprint request.</string>
     <string name="settings_biometric_encryption">Biometric encryption</string>
-    <string name="settings_biometric_encryption_desc">Stronger security: the unlock key is hardware-encrypted and can only be read after a fingerprint. Auto unlock and notification buttons then no longer work for those PCs. Only applies to PCs paired after this is turned on — re-pair existing PCs to apply it.</string>
+    <string name="settings_biometric_encryption_desc">Stronger security: the unlock key is hardware-encrypted and can only be read after a fingerprint. Auto unlock and notification buttons then no longer work. Turned off, each PC goes back to unencrypted on its next unlock. Either way, the fingerprint is still asked to confirm each unlock (except with auto unlock).</string>
 
     <string name="settings_section_service">Service</string>
     <string name="settings_service_port">UDP listen port: %1$d</string>

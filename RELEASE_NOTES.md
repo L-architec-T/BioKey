@@ -1,10 +1,13 @@
-## BioKey 0.2.7
+## BioKey 0.2.8
 
 ### Téléphone (Android)
-- **Éditeur de macros** : nouveau bouton **« Tester »**, qui joue tout de suite sur le PC les étapes affichées, même sans les avoir enregistrées. La macro démarre 3 secondes après, dans la fenêtre active.
-- Les pauses sont limitées à 30 secondes, la durée maximale acceptée par le PC. Avant, une pause plus longue empêchait la macro de se lancer, sans aucun message.
-- La fenêtre de mise à jour met en forme les notes de version (titres, listes, gras).
+- **Déverrouillage direct** : la demande d'empreinte peut s'afficher sans toucher la notification.
+  - Si Android bloque les notifications plein écran, les réglages le signalent avec un bouton **Autoriser** (écran éteint ou verrouillé).
+  - Nouvelle permission facultative « Superposition sur d'autres applis » : l'empreinte s'ouvre aussi pendant que vous utilisez le téléphone.
+- **Chiffrement biométrique** : le réglage s'applique maintenant aux PC déjà appairés, sans réappairage.
+  - Activé : la clé est chiffrée tout de suite.
+  - Désactivé : chaque PC repasse sans chiffrement à son prochain déverrouillage.
+  - L'empreinte reste demandée pour confirmer chaque déverrouillage, sauf avec le déverrouillage automatique.
 
 ### PC
-- Le service BioKey sait jouer une macro de test envoyée par le téléphone.
-- **Mettez le PC à jour avant d'utiliser « Tester »** : une version plus ancienne verrouille la session au lieu de jouer la macro.
+- Après une mise à jour, BioKey redémarre bien tout seul et met à jour ses modules d'un coup, sans avoir à le rouvrir. Ce correctif agit à partir de la mise à jour suivante.

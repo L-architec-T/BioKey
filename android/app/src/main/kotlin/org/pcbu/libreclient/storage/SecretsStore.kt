@@ -27,8 +27,7 @@ import javax.crypto.spec.PSource
  * Default matches pcbu-desktop's own default ("Biometric encryption" toggle
  * OFF): the AES wrapping key has no `setUserAuthenticationRequired`, so
  * unlocking doesn't need a *second* biometric prompt beyond the one already
- * shown for the actual unlock decision. With the toggle ON (Réglages, applied
- * at pairing time) the passwordKey is instead wrapped with an RSA key that
+ * shown for the actual unlock decision. With the toggle ON (Réglages) the passwordKey is instead wrapped with an RSA key that
  * only decrypts through a strong-biometric [BiometricPrompt] CryptoObject —
  * see [preparePasswordKeyDecryption].
  *
@@ -74,6 +73,13 @@ class SecretsStore(context: Context) {
             cipher.init(Cipher.DECRYPT_MODE, privateKey, oaepParams())
             BiometricDecryption(cipher, ciphertext)
         }.onFailure { Log.w(TAG, "biometric passwordKey unusable for $deviceId", it) }.getOrNull()
+    }
+
+    /** Réglages "Chiffrement biométrique" turned on: moves a plain passwordKey under the
+     * biometric RSA key right away (encrypting needs no fingerprint). No-op if already gated. */
+    fun gatePasswordKeyWithBiometric(deviceId: String) {
+        val plain = readPasswordKey(deviceId) ?: return
+        storeBiometric(passwordKeyPrefKey(deviceId), plain)
     }
 
     fun deleteDevice(deviceId: String) {

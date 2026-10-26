@@ -12,6 +12,9 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <!-- Lets the fingerprint prompt open by itself while the phone is in use (an app allowed
+         to draw over others may start activities from the background). Optional. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- Bluetooth proximity lock: BLE beacon only, no scanning or connections. -->
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
