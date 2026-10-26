@@ -48,8 +48,16 @@ android {
         }
     }
 
+    // Premium backend (see premium/PremiumAccess.kt): "fake" = simulated purchase with a test
+    // toggle, "unlocked" = everything free (GitHub build). -Pbiokey.premium=fake overrides it,
+    // e.g. to try the purchase flow in a release-signed APK installed over the real app.
+    val premiumOverride = (project.findProperty("biokey.premium") as String?)
     buildTypes {
+        debug {
+            buildConfigField("String", "PREMIUM_MODE", "\"${premiumOverride ?: "fake"}\"")
+        }
         release {
+            buildConfigField("String", "PREMIUM_MODE", "\"${premiumOverride ?: "unlocked"}\"")
             signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")

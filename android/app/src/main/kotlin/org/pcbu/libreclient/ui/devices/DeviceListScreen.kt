@@ -1,5 +1,11 @@
 package org.pcbu.libreclient.ui.devices
 
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import org.pcbu.libreclient.premium.PremiumFeature
+import org.pcbu.libreclient.premium.PremiumDialog
+import org.pcbu.libreclient.premium.PremiumAccess
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -70,6 +76,10 @@ fun DeviceListScreen(
         }
     }
     val fabBackdrop = rememberGlassFabBackdrop()
+    val context = LocalContext.current
+    val premium = remember { PremiumAccess.get(context) }
+    val isPremium by premium.isPremium.collectAsState(initial = true)
+    var showPremium by remember { mutableStateOf(false) }
 
     Box(modifier.fillMaxSize()) {
         LazyColumn(
@@ -123,12 +133,19 @@ fun DeviceListScreen(
             }
         }
         GlassFab(
-            onClick = onAddDeviceClick,
+            onClick = {
+                if (!isPremium && devices.size >= PremiumAccess.FREE_DEVICE_LIMIT) showPremium = true
+                else onAddDeviceClick()
+            },
             icon = Icons.Filled.Add,
             contentDescription = stringResource(R.string.devices_add),
             backdrop = fabBackdrop,
             modifier = Modifier.align(Alignment.BottomEnd),
         )
+    }
+
+    if (showPremium) {
+        PremiumDialog(PremiumFeature.MULTIPLE_PCS, onDismiss = { showPremium = false }, onPurchased = onAddDeviceClick)
     }
 }
 

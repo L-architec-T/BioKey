@@ -10,12 +10,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.DragIndicator
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -32,6 +35,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.Alignment
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,6 +43,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -55,6 +62,7 @@ import org.pcbu.libreclient.ui.components.PillButton
 import org.pcbu.libreclient.ui.components.SubScreen
 import org.pcbu.libreclient.ui.components.rememberGlassFabBackdrop
 import org.pcbu.libreclient.ui.theme.Accent
+import org.pcbu.libreclient.ui.theme.AccentDim
 import org.pcbu.libreclient.ui.theme.GlassCard
 import org.pcbu.libreclient.ui.theme.Red
 import org.pcbu.libreclient.ui.theme.TextPrimary
@@ -68,7 +76,21 @@ import org.pcbu.libreclient.protocol.model.MacroStepTypes
 import org.pcbu.libreclient.protocol.model.PcbuJson
 import org.pcbu.libreclient.unlock.LockBroadcastSender
 
-private const val DEFAULT_TIMEOUT_MS = 1000
+private const val DEFAULT_TIMEOUT_SECONDS = "1"
+
+/** A step plus a stable id, so reordering by drag keeps each row's identity (two identical
+ * "ENTER" steps would otherwise share a key). */
+private data class EditableStep(val id: Long, val step: MacroStepDto)
+
+/** The protocol counts in ms; the editor shows seconds ("1,5" for 1500 ms). */
+private fun formatSeconds(ms: Int): String {
+    val seconds = ms / 1000.0
+    return if (seconds % 1.0 == 0.0) seconds.toLong().toString()
+    else "%.3f".format(java.util.Locale.FRANCE, seconds).trimEnd('0').trimEnd(',')
+}
+
+private fun parseSecondsToMs(input: String): Int? =
+    input.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it >= 0 && it <= 3_600 }?.let { (it * 1000).toInt() }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,16 +103,25 @@ fun MacroEditorScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    var steps by remember { mutableStateOf<List<MacroStepDto>>(emptyList()) }
+    var steps by remember { mutableStateOf<List<EditableStep>>(emptyList()) }
+    // What the PC has, to show "Enregistrer" only while there are unsaved changes.
+    var savedSteps by remember { mutableStateOf<List<MacroStepDto>>(emptyList()) }
+    var nextId by remember { mutableStateOf(0L) }
     var seeded by remember { mutableStateOf(false) }
     LaunchedEffect(device) {
         val currentDevice = device ?: return@LaunchedEffect
         if (seeded) return@LaunchedEffect
-        steps = currentDevice.macroStepsJson
+        savedSteps = currentDevice.macroStepsJson
             ?.let { json -> runCatching { PcbuJson.decodeFromString(MacroDto.serializer(), json).steps }.getOrNull() }
             ?: emptyList()
+        steps = savedSteps.map { EditableStep(nextId++, it) }
         seeded = true
     }
+    val hasChanges = seeded && steps.map { it.step } != savedSteps
+
+    val listState = rememberLazyListState()
+    var draggedId by remember { mutableStateOf<Long?>(null) }
+    var dragOffset by remember { mutableFloatStateOf(0f) }
 
     var showAddDialog by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("") }
@@ -118,29 +149,58 @@ fun MacroEditorScreen(
                 )
             } else {
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier.weight(1f).layerBackdrop(fabBackdrop).verticalEdgeFade(),
                     // vertical ≥ verticalEdgeFade (14dp): first/last step never masked at rest.
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    items(steps.indices.toList()) { index ->
+                    itemsIndexed(steps, key = { _, item -> item.id }) { _, item ->
+                        val dragging = item.id == draggedId
                         MacroStepRow(
-                            step = steps[index],
-                            canMoveUp = index > 0,
-                            canMoveDown = index < steps.lastIndex,
-                            onMoveUp = { steps = steps.toMutableList().apply { add(index - 1, removeAt(index)) } },
-                            onMoveDown = { steps = steps.toMutableList().apply { add(index + 1, removeAt(index)) } },
-                            onDelete = { steps = steps.toMutableList().apply { removeAt(index) } },
+                            step = item.step,
+                            onDelete = { steps = steps.filterNot { it.id == item.id } },
+                            handleModifier = Modifier.pointerInput(item.id) {
+                                detectDragGestures(
+                                    onDragStart = { draggedId = item.id; dragOffset = 0f },
+                                    onDragEnd = { draggedId = null; dragOffset = 0f },
+                                    onDragCancel = { draggedId = null; dragOffset = 0f },
+                                    onDrag = { change, amount ->
+                                        change.consume()
+                                        dragOffset += amount.y
+                                        // Swap with the row under the dragged row's center, then shift the
+                                        // offset by the slot change so the row stays under the finger.
+                                        val visible = listState.layoutInfo.visibleItemsInfo
+                                        val current = visible.firstOrNull { it.key == item.id } ?: return@detectDragGestures
+                                        val center = current.offset + dragOffset + current.size / 2f
+                                        val target = visible.firstOrNull {
+                                            it.key != item.id && it.key is Long && center > it.offset && center < it.offset + it.size
+                                        } ?: return@detectDragGestures
+                                        val from = steps.indexOfFirst { it.id == item.id }
+                                        val to = steps.indexOfFirst { it.id == target.key }
+                                        if (from < 0 || to < 0) return@detectDragGestures
+                                        steps = steps.toMutableList().apply { add(to, removeAt(from)) }
+                                        dragOffset += current.offset - target.offset
+                                    },
+                                )
+                            },
+                            modifier = if (dragging) {
+                                Modifier.zIndex(1f).graphicsLayer { translationY = dragOffset; scaleX = 1.02f; scaleY = 1.02f }
+                            } else {
+                                Modifier.animateItem()
+                            },
                         )
                     }
                 }
             }
 
-            PillButton(
+            if (hasChanges) PillButton(
                 onClick = {
-                    val json = PcbuJson.encodeToString(MacroDto.serializer(), MacroDto(steps = steps))
+                    val toSave = steps.map { it.step }
+                    val json = PcbuJson.encodeToString(MacroDto.serializer(), MacroDto(steps = toSave))
                     scope.launch {
-                        pairingRepository.updateMacroSteps(deviceId, json.takeIf { steps.isNotEmpty() })
+                        pairingRepository.updateMacroSteps(deviceId, json.takeIf { toSave.isNotEmpty() })
+                        savedSteps = toSave
                         val encKey = pairingRepository.readEncKey(deviceId)
                         status = if (encKey == null) {
                             saveNoKeyMessage
@@ -173,7 +233,8 @@ fun MacroEditorScreen(
         AddMacroStepDialog(
             onDismiss = { showAddDialog = false },
             onAdd = { step ->
-                steps = steps + step
+                steps = steps + EditableStep(nextId++, step)
+                status = ""
                 showAddDialog = false
             },
         )
@@ -183,31 +244,25 @@ fun MacroEditorScreen(
 @Composable
 private fun MacroStepRow(
     step: MacroStepDto,
-    canMoveUp: Boolean,
-    canMoveDown: Boolean,
-    onMoveUp: () -> Unit,
-    onMoveDown: () -> Unit,
     onDelete: () -> Unit,
+    handleModifier: Modifier,
+    modifier: Modifier = Modifier,
 ) {
     val summary = when (step.type) {
         MacroStepTypes.KEY_COMBO -> stringResource(R.string.macro_editor_step_summary_key_combo, step.keys.orEmpty().joinToString(" + "))
-        MacroStepTypes.TIMEOUT -> stringResource(R.string.macro_editor_step_summary_timeout, step.ms ?: 0)
+        MacroStepTypes.TIMEOUT -> stringResource(R.string.macro_editor_step_summary_timeout, formatSeconds(step.ms ?: 0))
         MacroStepTypes.TYPE_TEXT -> stringResource(R.string.macro_editor_step_summary_type_text, step.text.orEmpty())
         else -> step.type
     }
-    GlassCard(Modifier.fillMaxWidth()) {
-        Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+    GlassCard(modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            // Whole 48dp box is the grab area, not just the icon.
+            androidx.compose.foundation.layout.Box(handleModifier.size(48.dp), contentAlignment = Alignment.Center) {
+                Icon(Icons.Filled.DragIndicator, contentDescription = stringResource(R.string.macro_editor_reorder), tint = TextSecondary)
+            }
             Text(summary, style = MaterialTheme.typography.bodyLarge, color = TextPrimary, modifier = Modifier.weight(1f))
-            Row {
-                IconButton(onClick = onMoveUp, enabled = canMoveUp) {
-                    Icon(Icons.Filled.ArrowUpward, contentDescription = stringResource(R.string.macro_editor_move_up))
-                }
-                IconButton(onClick = onMoveDown, enabled = canMoveDown) {
-                    Icon(Icons.Filled.ArrowDownward, contentDescription = stringResource(R.string.macro_editor_move_down))
-                }
-                IconButton(onClick = onDelete) {
-                    Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.macro_editor_delete_step), tint = Red)
-                }
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.macro_editor_delete_step), tint = Red)
             }
         }
     }
@@ -218,7 +273,7 @@ private fun MacroStepRow(
 private fun AddMacroStepDialog(onDismiss: () -> Unit, onAdd: (MacroStepDto) -> Unit) {
     var type by remember { mutableStateOf(MacroStepTypes.KEY_COMBO) }
     var selectedKeys by remember { mutableStateOf(emptySet<String>()) }
-    var timeoutMs by remember { mutableStateOf(DEFAULT_TIMEOUT_MS.toString()) }
+    var timeoutSeconds by remember { mutableStateOf(DEFAULT_TIMEOUT_SECONDS) }
     var typeText by remember { mutableStateOf("") }
 
     val typeOptions = listOf(
@@ -229,7 +284,7 @@ private fun AddMacroStepDialog(onDismiss: () -> Unit, onAdd: (MacroStepDto) -> U
 
     val canAdd = when (type) {
         MacroStepTypes.KEY_COMBO -> selectedKeys.isNotEmpty()
-        MacroStepTypes.TIMEOUT -> timeoutMs.toIntOrNull() != null
+        MacroStepTypes.TIMEOUT -> parseSecondsToMs(timeoutSeconds) != null
         MacroStepTypes.TYPE_TEXT -> typeText.isNotEmpty() && typeText.all { it.code in 0x20..0x7E }
         else -> false
     }
@@ -245,6 +300,12 @@ private fun AddMacroStepDialog(onDismiss: () -> Unit, onAdd: (MacroStepDto) -> U
                             selected = type == value,
                             onClick = { type = value },
                             shape = SegmentedButtonDefaults.itemShape(index, typeOptions.size),
+                            icon = {},
+                            colors = SegmentedButtonDefaults.colors(
+                                activeContainerColor = AccentDim,
+                                activeContentColor = Accent,
+                                activeBorderColor = Accent,
+                            ),
                         ) { Text(label) }
                     }
                 }
@@ -270,10 +331,10 @@ private fun AddMacroStepDialog(onDismiss: () -> Unit, onAdd: (MacroStepDto) -> U
                     }
                     MacroStepTypes.TIMEOUT -> {
                         TextField(
-                            value = timeoutMs,
-                            onValueChange = { timeoutMs = it },
+                            value = timeoutSeconds,
+                            onValueChange = { timeoutSeconds = it },
                             label = { Text(stringResource(R.string.macro_editor_timeout_label)) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                         )
                     }
@@ -294,7 +355,7 @@ private fun AddMacroStepDialog(onDismiss: () -> Unit, onAdd: (MacroStepDto) -> U
                 onClick = {
                     val step = when (type) {
                         MacroStepTypes.KEY_COMBO -> MacroStepDto(type = type, keys = selectedKeys.toList())
-                        MacroStepTypes.TIMEOUT -> MacroStepDto(type = type, ms = timeoutMs.toIntOrNull())
+                        MacroStepTypes.TIMEOUT -> MacroStepDto(type = type, ms = parseSecondsToMs(timeoutSeconds))
                         else -> MacroStepDto(type = type, text = typeText)
                     }
                     onAdd(step)

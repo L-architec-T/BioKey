@@ -1,5 +1,8 @@
 package org.pcbu.libreclient.service
 
+import org.pcbu.libreclient.protocol.model.PcbuJson
+import org.pcbu.libreclient.protocol.model.MacroDto
+import org.pcbu.libreclient.premium.PremiumAccess
 import android.app.KeyguardManager
 import android.app.Notification
 import android.app.NotificationChannel
@@ -111,6 +114,7 @@ class UnlockForegroundService : Service() {
     @Volatile private var presenceArmed = false
     private var outOfRangeJob: Job? = null
     private lateinit var bleAdvertiser: BlePresenceAdvertiser
+    private lateinit var premium: PremiumAccess
     // The beacon went out at least once, so PCs may be armed and need an explicit disarm.
     @Volatile private var bleArmed = false
     @Volatile private var bleDisarming = false
@@ -128,9 +132,11 @@ class UnlockForegroundService : Service() {
         preferences = PreferencesStore(this)
         createNotificationChannel()
         registerWifiCallback()
+        premium = PremiumAccess.get(this)
         startPresenceLoop()
         bleAdvertiser = BlePresenceAdvertiser(this)
         startBlePresenceLoop()
+        startMacroPremiumSync()
         UnlockServiceHeartbeatWorker.schedule(this)
         _isRunning.value = true
     }
@@ -265,7 +271,9 @@ class UnlockForegroundService : Service() {
      * explicitly instead of letting them time out and lock.
      */
     private fun startPresenceLoop() = scope.launch {
-        combine(preferences.lockOnWifiDisconnectEnabled, preferences.lockTimeoutSeconds) { enabled, timeout -> enabled to timeout }
+        combine(preferences.lockOnWifiDisconnectEnabled, premium.isPremium, preferences.lockTimeoutSeconds) { enabled, isPremium, timeout ->
+            (enabled && isPremium) to timeout
+        }
             .distinctUntilChanged()
             .collectLatest { (enabled, timeoutSeconds) ->
                 if (!enabled) {
@@ -298,7 +306,9 @@ class UnlockForegroundService : Service() {
      * through them every [BLE_ROTATE_MS], each PC seeing its own beacon well within its timeout.
      */
     private fun startBlePresenceLoop() = scope.launch {
-        combine(preferences.lockOnBluetoothEnabled, preferences.lockTimeoutSeconds) { enabled, timeout -> enabled to timeout }
+        combine(preferences.lockOnBluetoothEnabled, premium.isPremium, preferences.lockTimeoutSeconds) { enabled, isPremium, timeout ->
+            (enabled && isPremium) to timeout
+        }
             .distinctUntilChanged()
             .collectLatest { (enabled, timeoutSeconds) ->
                 if (!enabled) {
@@ -339,6 +349,28 @@ class UnlockForegroundService : Service() {
         }
     }
 
+    /**
+     * Macros are Premium, but pcbu-lockd stores and replays them on its own, so hiding the
+     * editor isn't enough: without Premium every PC gets an empty macro, and the ones saved on
+     * this phone are pushed back as soon as Premium is (re)acquired.
+     */
+    private fun startMacroPremiumSync() = scope.launch {
+        var previous: Boolean? = null
+        premium.isPremium.distinctUntilChanged().collect { isPremium ->
+            val firstValue = previous == null
+            previous = isPremium
+            // Already Premium at start: the PCs hold the right macros, nothing to resend.
+            if (firstValue && isPremium) return@collect
+            val emptyMacro = PcbuJson.encodeToString(MacroDto.serializer(), MacroDto())
+            for ((device, encKey) in pairedDevicesWithKeys()) {
+                val stored = device.macroStepsJson ?: continue
+                runCatching {
+                    LockBroadcastSender.sendMacro(this@UnlockForegroundService, device.deviceId, encKey, if (isPremium) stored else emptyMacro)
+                }
+            }
+        }
+    }
+
     private suspend fun pairedDevicesWithKeys(): List<Pair<PairedDeviceEntity, String>> =
         db.pairedDeviceDao().getAll().mapNotNull { device -> secrets.readEncKey(device.deviceId)?.let { device to it } }
 
@@ -354,7 +386,7 @@ class UnlockForegroundService : Service() {
     private fun scheduleOutOfRangeNotification() {
         outOfRangeJob?.cancel()
         outOfRangeJob = scope.launch {
-            if (!preferences.lockOnWifiDisconnectEnabled.first()) return@launch
+            if (!preferences.lockOnWifiDisconnectEnabled.first() || !premium.isPremium.first()) return@launch
             delay(preferences.lockTimeoutSeconds.first() * 1_000L)
             if (wifiConnected) return@launch
             val names = db.pairedDeviceDao().getAll().joinToString(", ") { it.deviceName }

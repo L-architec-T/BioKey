@@ -1,5 +1,10 @@
 package org.pcbu.libreclient.ui.settings
 
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import org.pcbu.libreclient.premium.PremiumFeature
+import org.pcbu.libreclient.premium.PremiumDialog
+import org.pcbu.libreclient.premium.PremiumAccess
 import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -20,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,12 +73,41 @@ fun SettingsScreen(preferencesStore: PreferencesStore, modifier: Modifier = Modi
     val selectUserOnWifiConnect by preferencesStore.selectUserOnWifiConnectEnabled.collectAsState(initial = false)
     val biometricEncryption by preferencesStore.biometricEncryptionEnabled.collectAsState(initial = false)
     val serviceRunning by UnlockForegroundService.isRunning.collectAsState()
+    val premium = remember { PremiumAccess.get(context) }
+    val isPremium by premium.isPremium.collectAsState(initial = true)
+    var premiumDialog by remember { mutableStateOf<PremiumFeature?>(null) }
 
     Column(
         modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState())
             .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        if (premium.canPurchase) {
+            SectionCard("BioKey Premium") {
+                Text(
+                    if (isPremium) "Premium actif : plusieurs PC, verrouillage de proximité et macros."
+                    else "Plusieurs PC, verrouillage de proximité et macros pour ${PremiumAccess.PRICE_LABEL}, à vie.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary,
+                )
+                if (!isPremium) {
+                    PillButton(
+                        text = "Passer à Premium",
+                        onClick = { premiumDialog = PremiumFeature.NONE },
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    )
+                }
+                if (premium.isSimulated) {
+                    SettingsSwitchRow(
+                        title = "Premium simulé (test)",
+                        subtitle = "Version de test uniquement : active ou retire l'achat sans payer.",
+                        checked = isPremium,
+                        onCheckedChange = { scope.launch { premium.setSimulatedPremium(it) } },
+                    )
+                }
+            }
+        }
+
         SectionCard(stringResource(R.string.settings_section_unlocking)) {
             SettingsSwitchRow(
                 title = stringResource(R.string.settings_direct_unlock),
@@ -101,23 +136,28 @@ fun SettingsScreen(preferencesStore: PreferencesStore, modifier: Modifier = Modi
             )
             SettingsSwitchRow(
                 title = stringResource(R.string.settings_lock_on_wifi_disconnect),
-                subtitle = stringResource(R.string.settings_lock_on_wifi_disconnect_desc),
-                checked = lockOnWifiDisconnect,
-                onCheckedChange = { scope.launch { preferencesStore.setLockOnWifiDisconnectEnabled(it) } },
+                subtitle = premiumSubtitle(isPremium, stringResource(R.string.settings_lock_on_wifi_disconnect_desc)),
+                checked = lockOnWifiDisconnect && isPremium,
+                onCheckedChange = {
+                    if (!isPremium) premiumDialog = PremiumFeature.PROXIMITY_LOCK
+                    else scope.launch { preferencesStore.setLockOnWifiDisconnectEnabled(it) }
+                },
             )
             SettingsSwitchRow(
                 title = stringResource(R.string.settings_lock_on_bluetooth),
-                subtitle = stringResource(R.string.settings_lock_on_bluetooth_desc),
-                checked = lockOnBluetooth,
+                subtitle = premiumSubtitle(isPremium, stringResource(R.string.settings_lock_on_bluetooth_desc)),
+                checked = lockOnBluetooth && isPremium,
                 onCheckedChange = { enabled ->
-                    if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !BlePresenceAdvertiser(context).hasPermission()) {
+                    if (!isPremium) {
+                        premiumDialog = PremiumFeature.PROXIMITY_LOCK
+                    } else if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !BlePresenceAdvertiser(context).hasPermission()) {
                         advertisePermissionLauncher.launch(Manifest.permission.BLUETOOTH_ADVERTISE)
                     } else {
                         scope.launch { preferencesStore.setLockOnBluetoothEnabled(enabled) }
                     }
                 },
             )
-            if (lockOnWifiDisconnect || lockOnBluetooth) {
+            if (isPremium && (lockOnWifiDisconnect || lockOnBluetooth)) {
                 Text(stringResource(R.string.settings_lock_timeout), style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PreferencesStore.LOCK_TIMEOUT_CHOICES_SECONDS.forEach { seconds ->
@@ -173,7 +213,12 @@ fun SettingsScreen(preferencesStore: PreferencesStore, modifier: Modifier = Modi
             )
         }
     }
+
+    premiumDialog?.let { feature -> PremiumDialog(feature, onDismiss = { premiumDialog = null }) }
 }
+
+private fun premiumSubtitle(isPremium: Boolean, description: String) =
+    if (isPremium) description else "Premium · $description"
 
 @Composable
 private fun SettingsSwitchRow(

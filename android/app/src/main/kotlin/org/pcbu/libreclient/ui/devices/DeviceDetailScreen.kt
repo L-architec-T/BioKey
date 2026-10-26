@@ -1,5 +1,8 @@
 package org.pcbu.libreclient.ui.devices
 
+import org.pcbu.libreclient.premium.PremiumFeature
+import org.pcbu.libreclient.premium.PremiumDialog
+import org.pcbu.libreclient.premium.PremiumAccess
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -48,6 +51,9 @@ fun DeviceDetailScreen(
     val context = LocalContext.current
     var status by remember { mutableStateOf("") }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    val premium = remember { PremiumAccess.get(context) }
+    val isPremium by premium.isPremium.collectAsState(initial = true)
+    var showPremium by remember { mutableStateOf(false) }
 
     SubScreen(title = device?.deviceName ?: "", onBack = onBack) { padding ->
         val currentDevice = device
@@ -122,7 +128,7 @@ fun DeviceDetailScreen(
                 color = TextSecondary,
             )
             PillButton(
-                onClick = onEditMacro,
+                onClick = { if (isPremium) onEditMacro() else showPremium = true },
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 text = stringResource(R.string.device_detail_macro_edit),
             )
@@ -138,6 +144,10 @@ fun DeviceDetailScreen(
                 Text(status, modifier = Modifier.padding(top = 16.dp))
             }
         }
+    }
+
+    if (showPremium) {
+        PremiumDialog(PremiumFeature.MACROS, onDismiss = { showPremium = false }, onPurchased = onEditMacro)
     }
 
     if (showDeleteConfirm) {
