@@ -1,9 +1,10 @@
-## BioKey 0.2.6
+## BioKey 0.2.7
 
 ### Téléphone (Android)
-- **Éditeur de macros** :
-  - les étapes se réordonnent par glisser-déposer avec la poignée à gauche (fini les flèches haut/bas) ;
-  - les pauses s'affichent et se saisissent en secondes (« Attendre 1,5 s ») ;
-  - le bouton « Enregistrer » n'apparaît que s'il y a des modifications à enregistrer ;
-  - fenêtre « Ajouter une étape » : boutons aux couleurs de l'app, sans coche.
-- Préparation de BioKey Premium pour une future version Play Store. Rien ne change dans cette version : toutes les fonctions restent gratuites.
+- **Éditeur de macros** : nouveau bouton **« Tester »**, qui joue tout de suite sur le PC les étapes affichées, même sans les avoir enregistrées. La macro démarre 3 secondes après, dans la fenêtre active.
+- Les pauses sont limitées à 30 secondes, la durée maximale acceptée par le PC. Avant, une pause plus longue empêchait la macro de se lancer, sans aucun message.
+- La fenêtre de mise à jour met en forme les notes de version (titres, listes, gras).
+
+### PC
+- Le service BioKey sait jouer une macro de test envoyée par le téléphone.
+- **Mettez le PC à jour avant d'utiliser « Tester »** : une version plus ancienne verrouille la session au lieu de jouer la macro.

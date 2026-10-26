@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <csignal>
 #include <cstring>
@@ -314,6 +315,34 @@ void HandleSetMacroCommand(const PairedDevice &device, const std::vector<uint8_t
     spdlog::warn("Rejected malformed setMacro payload from '{}': {}", device.deviceName, ex.what());
   }
 }
+
+// The editor's "Tester" button: plays the macro sent with the command (the steps on screen,
+// saved or not) right away, without storing it. Detached because a macro can wait for tens
+// of seconds and the UDP loop must keep answering; one test at a time.
+std::atomic_bool g_MacroTestRunning{false};
+
+void HandleRunMacroCommand(const PairedDevice &device, const std::vector<uint8_t> &plaintext) {
+  std::string macroStr(plaintext.begin(), plaintext.end());
+  try {
+    if(!ValidateMacroSteps(nlohmann::json::parse(macroStr))) {
+      spdlog::warn("Rejected invalid runMacro payload from '{}'.", device.deviceName);
+      return;
+    }
+  } catch(const std::exception &ex) {
+    spdlog::warn("Rejected malformed runMacro payload from '{}': {}", device.deviceName, ex.what());
+    return;
+  }
+  if(g_MacroTestRunning.exchange(true)) {
+    spdlog::info("Macro test from '{}' ignored: another one is still playing.", device.deviceName);
+    return;
+  }
+  spdlog::info("Playing a macro test from '{}'.", device.deviceName);
+  std::thread([macroStr, name = device.deviceName] {
+    if(!PlatformHelper::PlayMacro(macroStr))
+      spdlog::error("PlayMacro failed for the macro test from '{}'.", name);
+    g_MacroTestRunning = false;
+  }).detach();
+}
 #endif
 
 } // namespace
@@ -414,6 +443,12 @@ int main() {
       HandleSetMacroCommand(device, plaintext);
 #else
       spdlog::warn("setMacro command received but isn't supported on this platform.");
+#endif
+    } else if(request->cmd == "runMacro") {
+#ifdef LINUX
+      HandleRunMacroCommand(device, plaintext);
+#else
+      spdlog::warn("runMacro command received but isn't supported on this platform.");
 #endif
     } else {
       spdlog::info("Verified lock request from '{}'.", device.deviceName);

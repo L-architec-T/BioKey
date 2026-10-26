@@ -89,8 +89,9 @@ private fun formatSeconds(ms: Int): String {
     else "%.3f".format(java.util.Locale.FRANCE, seconds).trimEnd('0').trimEnd(',')
 }
 
+// 30 s max per pause: pcbu-lockd rejects the whole macro beyond that (ValidateMacroSteps).
 private fun parseSecondsToMs(input: String): Int? =
-    input.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it >= 0 && it <= 3_600 }?.let { (it * 1000).toInt() }
+    input.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it >= 0 && it <= 30 }?.let { (it * 1000).toInt() }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -129,6 +130,9 @@ fun MacroEditorScreen(
     val saveErrorTemplate = stringResource(R.string.macro_editor_save_local_only)
     val saveSentMessage = stringResource(R.string.macro_editor_save_sent)
     val saveNoKeyMessage = stringResource(R.string.macro_editor_save_no_key)
+    val testSentMessage = stringResource(R.string.macro_editor_test_sent)
+    val testErrorTemplate = stringResource(R.string.macro_editor_test_failed)
+    val testNoKeyMessage = stringResource(R.string.macro_editor_test_no_key)
     val fabBackdrop = rememberGlassFabBackdrop()
 
     SubScreen(title = stringResource(R.string.macro_editor_title), onBack = onBack, fab = {
@@ -194,29 +198,56 @@ fun MacroEditorScreen(
                 }
             }
 
-            if (hasChanges) PillButton(
-                onClick = {
-                    val toSave = steps.map { it.step }
-                    val json = PcbuJson.encodeToString(MacroDto.serializer(), MacroDto(steps = toSave))
-                    scope.launch {
-                        pairingRepository.updateMacroSteps(deviceId, json.takeIf { toSave.isNotEmpty() })
-                        savedSteps = toSave
-                        val encKey = pairingRepository.readEncKey(deviceId)
-                        status = if (encKey == null) {
-                            saveNoKeyMessage
-                        } else {
-                            try {
-                                withContext(Dispatchers.IO) { LockBroadcastSender.sendMacro(context, deviceId, encKey, json) }
-                                saveSentMessage
-                            } catch (e: Exception) {
-                                saveErrorTemplate.format(e.toUserMessage())
+            if (steps.isNotEmpty() || hasChanges) Row(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                // Plays the steps on screen, saved or not, so a macro can be tried before saving.
+                if (steps.isNotEmpty()) PillButton(
+                    onClick = {
+                        val json = PcbuJson.encodeToString(MacroDto.serializer(), MacroDto(steps = steps.map { it.step }))
+                        scope.launch {
+                            val encKey = pairingRepository.readEncKey(deviceId)
+                            status = if (encKey == null) {
+                                testNoKeyMessage
+                            } else {
+                                try {
+                                    withContext(Dispatchers.IO) { LockBroadcastSender.sendRunMacro(context, deviceId, encKey, json) }
+                                    testSentMessage
+                                } catch (e: Exception) {
+                                    testErrorTemplate.format(e.toUserMessage())
+                                }
                             }
                         }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                text = stringResource(R.string.macro_editor_save),
-            )
+                    },
+                    modifier = Modifier.weight(1f),
+                    tone = TextPrimary,
+                    text = stringResource(R.string.macro_editor_test),
+                )
+                if (hasChanges) PillButton(
+                    onClick = {
+                        val toSave = steps.map { it.step }
+                        val json = PcbuJson.encodeToString(MacroDto.serializer(), MacroDto(steps = toSave))
+                        scope.launch {
+                            pairingRepository.updateMacroSteps(deviceId, json.takeIf { toSave.isNotEmpty() })
+                            savedSteps = toSave
+                            val encKey = pairingRepository.readEncKey(deviceId)
+                            status = if (encKey == null) {
+                                saveNoKeyMessage
+                            } else {
+                                try {
+                                    withContext(Dispatchers.IO) { LockBroadcastSender.sendMacro(context, deviceId, encKey, json) }
+                                    saveSentMessage
+                                } catch (e: Exception) {
+                                    saveErrorTemplate.format(e.toUserMessage())
+                                }
+                            }
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    text = stringResource(R.string.macro_editor_save),
+                )
+            }
 
             if (status.isNotEmpty()) {
                 Text(status, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))

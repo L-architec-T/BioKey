@@ -83,9 +83,9 @@ data class UdpBroadcast(
  * [org.pcbu.libreclient.unlock.LockBroadcastSender.LOCK_LISTEN_PORT] — no reply
  * expected, so unlike [UdpBroadcast] this needs no pcbuIP/pcbuPort of its own.
  * `cmd` selects which of pcbu-lockd's remote commands this is ("lock",
- * "selectUser", "suspend", or "setMacro" — see [MacroDto]); it defaults to
+ * "selectUser", "suspend", "setMacro" or "runMacro" — see [MacroDto]); it defaults to
  * "lock" to stay wire-compatible with pcbu-lockd builds from before
- * "selectUser" existed. For "setMacro", `encData` decrypts to the macro's
+ * "selectUser" existed. For "setMacro"/"runMacro", `encData` decrypts to the macro's
  * JSON (see [MacroDto]) instead of the small fixed marker word the other
  * commands use — pcbu-lockd parses it after decryption rather than treating
  * it as auth-only content. */

@@ -45,6 +45,11 @@ object LockBroadcastSender {
     fun sendMacro(context: Context, deviceId: String, encKey: String, macroJson: String) =
         sendCommand(context, deviceId, encKey, cmd = "setMacro", marker = macroJson)
 
+    /** Asks pcbu-lockd to play [macroJson] once right now, without storing it (the editor's
+     * "Tester" button). Same payload format as [sendMacro]. */
+    fun sendRunMacro(context: Context, deviceId: String, encKey: String, macroJson: String) =
+        sendCommand(context, deviceId, encKey, cmd = "runMacro", marker = macroJson)
+
     /** Asks pcbu-lockd to pre-select this device's paired OS user at the login greeter
      * (GDM/SDDM/etc., via a synthetic keypress) so its PAM conversation starts without a
      * physical click — see pcbu-lockd's HandleSelectUserCommand. The existing unlock flow
