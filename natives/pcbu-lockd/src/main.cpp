@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <atomic>
+#include <deque>
 #include <chrono>
 #include <csignal>
 #include <cstring>
@@ -23,8 +24,12 @@
 #include "utils/StringUtils.h"
 
 #ifdef LINUX
+#include <arpa/inet.h>
+#include <openssl/evp.h>
+
 #include "BlePresenceWatcher.h"
 #include "Login1UnlockWatcher.h"
+#include "platform/AppCatalog.h"
 #endif
 
 namespace {
@@ -293,6 +298,11 @@ bool ValidateMacroSteps(const nlohmann::json &macroJson) {
           return false;
         }
       }
+    } else if(type == "LAUNCH_APP") {
+      if(!step.contains("app") || !step["app"].is_string() || !AppCatalog::IsValidAppId(step["app"].get<std::string>())) {
+        spdlog::warn("setMacro LAUNCH_APP step needs a valid desktop file name in 'app'.");
+        return false;
+      }
     } else {
       spdlog::warn("setMacro step has an unrecognized type '{}'.", type);
       return false;
@@ -337,11 +347,115 @@ void HandleRunMacroCommand(const PairedDevice &device, const std::vector<uint8_t
     return;
   }
   spdlog::info("Playing a macro test from '{}'.", device.deviceName);
-  std::thread([macroStr, name = device.deviceName] {
-    if(!PlatformHelper::PlayMacro(macroStr))
+  std::thread([macroStr, name = device.deviceName, userName = device.userName] {
+    if(!PlatformHelper::PlayMacro(macroStr, userName))
       spdlog::error("PlayMacro failed for the macro test from '{}'.", name);
     g_MacroTestRunning = false;
   }).detach();
+}
+
+// The macro editor's application picker. The list (names + PNG icons) easily weighs hundreds of
+// KB, far past a UDP datagram and the 2 KB AES packet cap, so the phone sends a small "listApps"
+// command with a TCP port it listens on, and the PC connects back to the datagram's source
+// address: no PC IP to discover on the phone, no incoming TCP port to open on the PC's firewall.
+// The list is encrypted once with the device key and streamed in chunks (see Packets.h); the
+// phone's random nonce inside it ties the reply to its own request.
+constexpr size_t APP_LIST_CHUNK_SIZE = 60'000;
+constexpr uint32_t APP_LIST_SOCKET_TIMEOUT_S = 10;
+std::deque<std::string> g_RecentAppListNonces{};
+std::mutex g_AppListMutex{};
+
+class AppListConnection : public BaseConnection {
+public:
+  static PacketError Write(SOCKET socket, uint16_t packetId, const std::vector<uint8_t> &data) {
+    return WritePacket(socket, packetId, data);
+  }
+  static bool SetTimeout(SOCKET socket, uint32_t secs) {
+    return SetSocketRWTimeout(socket, secs);
+  }
+};
+
+std::string Base64(const std::vector<uint8_t> &data) {
+  std::string out(4 * ((data.size() + 2) / 3), '\0');
+  auto len = EVP_EncodeBlock(reinterpret_cast<unsigned char *>(out.data()), data.data(), static_cast<int>(data.size()));
+  out.resize(len);
+  return out;
+}
+
+void SendAppList(const PairedDevice &device, in_addr phoneIp, uint16_t phonePort, const std::string &nonce) {
+  nlohmann::json apps = nlohmann::json::array();
+  for(const auto &app : AppCatalog::List(device.userName)) {
+    nlohmann::json entry{{"id", app.id}, {"name", app.name}};
+    if(!app.iconPng.empty())
+      entry["icon"] = Base64(app.iconPng);
+    apps.push_back(entry);
+  }
+  auto body = nlohmann::json{{"nonce", nonce}, {"apps", apps}}.dump();
+  auto encrypted = CryptUtils::EncryptAESPacketLarge(std::vector<uint8_t>(body.begin(), body.end()), device.encryptionKey);
+  if(encrypted.result != PacketCryptResult::OK) {
+    spdlog::error("Failed to encrypt the app list for '{}'.", device.deviceName);
+    return;
+  }
+
+  auto sock = socket(AF_INET, SOCK_STREAM, 0);
+  if(sock < 0) {
+    spdlog::error("App list: socket() failed. (Code={})", SOCKET_LAST_ERROR);
+    return;
+  }
+  AppListConnection::SetTimeout(sock, APP_LIST_SOCKET_TIMEOUT_S);
+  struct sockaddr_in address {};
+  address.sin_family = AF_INET;
+  address.sin_addr = phoneIp;
+  address.sin_port = htons(phonePort);
+  char ipStr[INET_ADDRSTRLEN]{};
+  inet_ntop(AF_INET, &phoneIp, ipStr, sizeof(ipStr));
+  if(connect(sock, reinterpret_cast<struct sockaddr *>(&address), sizeof(address)) < 0) {
+    spdlog::warn("App list: can't reach '{}' at {}:{}. (Code={})", device.deviceName, ipStr, phonePort, SOCKET_LAST_ERROR);
+    SOCKET_CLOSE(sock);
+    return;
+  }
+
+  const auto &data = encrypted.data;
+  auto chunkCount = (data.size() + APP_LIST_CHUNK_SIZE - 1) / APP_LIST_CHUNK_SIZE;
+  auto header = nlohmann::json{{"size", data.size()}, {"chunks", chunkCount}}.dump();
+  auto ok = AppListConnection::Write(sock, PACKET_ID_APP_LIST_HEADER, std::vector<uint8_t>(header.begin(), header.end())) == PacketError::NONE;
+  for(size_t offset = 0; ok && offset < data.size(); offset += APP_LIST_CHUNK_SIZE) {
+    auto end = std::min(offset + APP_LIST_CHUNK_SIZE, data.size());
+    ok = AppListConnection::Write(sock, PACKET_ID_APP_LIST_CHUNK, std::vector<uint8_t>(data.begin() + offset, data.begin() + end)) == PacketError::NONE;
+  }
+  SOCKET_CLOSE(sock);
+  if(ok)
+    spdlog::info("Sent the app list ({} apps, {} bytes in {} chunks) to '{}'.", apps.size(), data.size(), chunkCount, device.deviceName);
+  else
+    spdlog::warn("App list: sending to '{}' failed partway.", device.deviceName);
+}
+
+void HandleListAppsCommand(const PairedDevice &device, const std::vector<uint8_t> &plaintext, const struct sockaddr_in &from) {
+  int port{};
+  std::string nonce{};
+  try {
+    auto json = nlohmann::json::parse(std::string(plaintext.begin(), plaintext.end()));
+    port = json.at("port").get<int>();
+    nonce = json.at("nonce").get<std::string>();
+  } catch(const std::exception &ex) {
+    spdlog::warn("Rejected malformed listApps payload from '{}': {}", device.deviceName, ex.what());
+    return;
+  }
+  if(port <= 0 || port > 65535 || nonce.empty() || nonce.size() > 64) {
+    spdlog::warn("Rejected listApps payload from '{}': bad port or nonce.", device.deviceName);
+    return;
+  }
+  {
+    // The phone broadcasts each command to several addresses: answer each request once.
+    std::lock_guard lock(g_AppListMutex);
+    if(std::ranges::find(g_RecentAppListNonces, nonce) != g_RecentAppListNonces.end())
+      return;
+    g_RecentAppListNonces.push_back(nonce);
+    if(g_RecentAppListNonces.size() > 32)
+      g_RecentAppListNonces.pop_front();
+  }
+  spdlog::info("App list requested by '{}'.", device.deviceName);
+  std::thread(SendAppList, device, from.sin_addr, static_cast<uint16_t>(port), nonce).detach();
 }
 #endif
 
@@ -443,6 +557,12 @@ int main() {
       HandleSetMacroCommand(device, plaintext);
 #else
       spdlog::warn("setMacro command received but isn't supported on this platform.");
+#endif
+    } else if(request->cmd == "listApps") {
+#ifdef LINUX
+      HandleListAppsCommand(device, plaintext, fromAddr);
+#else
+      spdlog::warn("listApps command received but isn't supported on this platform.");
 #endif
     } else if(request->cmd == "runMacro") {
 #ifdef LINUX

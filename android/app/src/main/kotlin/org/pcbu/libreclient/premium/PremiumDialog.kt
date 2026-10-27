@@ -72,7 +72,7 @@ fun PremiumDialog(
                 }
                 PremiumPerk(Icons.Outlined.Computer, "Plusieurs PC", "Fixe, portable, PC du travail…")
                 PremiumPerk(Icons.Outlined.LockClock, "Verrouillage de proximité", "Le PC se verrouille quand vous vous éloignez (Wi-Fi ou Bluetooth).")
-                PremiumPerk(Icons.Outlined.AutoFixHigh, "Macros après déverrouillage", "Touches et texte tapés automatiquement une fois le PC ouvert.")
+                PremiumPerk(Icons.Outlined.AutoFixHigh, "Macros après déverrouillage", "Touches et texte tapés automatiquement une fois le PC ouvert (PC sous Linux).")
                 if (premium.isSimulated) {
                     Spacer(Modifier.height(6.dp))
                     Text("Version de test : l'achat est simulé, rien n'est payé.", style = MaterialTheme.typography.labelSmall, color = TextSecondary)

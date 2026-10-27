@@ -1,5 +1,7 @@
 package org.pcbu.libreclient.storage
 
+import org.pcbu.libreclient.storage.db.displayName
+
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.runBlocking
@@ -80,6 +82,26 @@ class PairedDeviceDaoTest {
 
         val all = dao.getAll()
         assertEquals(listOf("alpha", "zeta"), all.map { it.deviceName })
+    }
+
+    @Test
+    fun `getAll orders by displayed name - phone-side name, else user`() = runBlocking {
+        val dao = db.pairedDeviceDao()
+        dao.insert(sampleDevice("dev-1").copy(deviceName = "debian", userName = "kevin"))
+        dao.insert(sampleDevice("dev-2").copy(deviceName = "debian", userName = "zoe", customName = "Bureau"))
+        dao.insert(sampleDevice("dev-3").copy(deviceName = "debian", userName = "anna"))
+
+        assertEquals(listOf("anna", "Bureau", "kevin"), dao.getAll().map { it.displayName })
+    }
+
+    @Test
+    fun `updateCustomName sets then clears the phone-side name`() = runBlocking {
+        val dao = db.pairedDeviceDao()
+        dao.insert(sampleDevice("dev-1"))
+        dao.updateCustomName("dev-1", "PC bureau")
+        assertEquals("PC bureau", dao.findById("dev-1")?.displayName)
+        dao.updateCustomName("dev-1", null)
+        assertEquals("larchitect", dao.findById("dev-1")?.displayName)
     }
 
     @Test

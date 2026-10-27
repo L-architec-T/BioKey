@@ -16,6 +16,10 @@ data class MacroStepDto(
     val keys: List<String>? = null,
     val ms: Int? = null,
     val text: String? = null,
+    /** LAUNCH_APP: desktop file name on the PC, e.g. "org.gnome.Nautilus.desktop". */
+    val app: String? = null,
+    /** LAUNCH_APP: the app's display name, for the editor only (pcbu-lockd ignores it). */
+    val label: String? = null,
 )
 
 @Serializable
@@ -29,7 +33,26 @@ object MacroStepTypes {
     const val KEY_COMBO = "KEY_COMBO"
     const val TIMEOUT = "TIMEOUT"
     const val TYPE_TEXT = "TYPE_TEXT"
+    const val LAUNCH_APP = "LAUNCH_APP"
 }
+
+/** Plaintext of the "listApps" command: where the phone waits for the PC's TCP connection,
+ * and a random nonce the PC echoes inside the encrypted list. */
+@Serializable
+data class ListAppsRequest(val port: Int, val nonce: String)
+
+/** First packet ([org.pcbu.libreclient.protocol.PacketIds.APP_LIST_HEADER]) of the reply:
+ * total size of the encrypted list and how many chunk packets follow. */
+@Serializable
+data class AppListHeader(val size: Int, val chunks: Int)
+
+/** An application installed on the PC; [icon] is a base64 PNG, absent when the PC only has
+ * an SVG icon for it. */
+@Serializable
+data class PcAppDto(val id: String, val name: String, val icon: String? = null)
+
+@Serializable
+data class AppListDto(val nonce: String, val apps: List<PcAppDto> = emptyList())
 
 /** Canonical key-name vocabulary for [MacroStepDto.keys] — every string here must have a
  * matching entry in pcbu-lockd's kKeyNameToKeycode table (PlatformHelper.Linux.cpp). An

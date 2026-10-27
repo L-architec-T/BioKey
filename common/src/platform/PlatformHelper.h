@@ -2,6 +2,7 @@
 #define PCBU_DESKTOP_PLATFORMHELPER_H
 
 #include <cstdint>
+#include <functional>
 #include <spdlog/spdlog.h>
 #include <string>
 #include <vector>
@@ -57,7 +58,10 @@ public:
 
   static bool IsValidMacroKeyName(const std::string &keyName);
 
-  static bool PlayMacro(const std::string &macroStepsJson);
+  // `waitUntilReady` runs right after the virtual keyboard is created, so the wait overlaps the
+  // time the desktop needs to pick that keyboard up; typing starts no sooner than 1s after it.
+  // `userName` is whose session LAUNCH_APP steps open the application in.
+  static bool PlayMacro(const std::string &macroStepsJson, const std::string &userName, const std::function<void()> &waitUntilReady = {});
 #endif
 private:
   PlatformHelper() = default;

@@ -1,6 +1,8 @@
 package org.pcbu.libreclient.ui.devices
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,7 +23,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DragIndicator
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -43,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.zIndex
@@ -75,6 +78,8 @@ import org.pcbu.libreclient.protocol.model.MacroStepDto
 import org.pcbu.libreclient.protocol.model.MacroStepTypes
 import org.pcbu.libreclient.protocol.model.PcbuJson
 import org.pcbu.libreclient.unlock.LockBroadcastSender
+import org.pcbu.libreclient.unlock.PcApp
+import org.pcbu.libreclient.unlock.PcAppListClient
 
 private const val DEFAULT_TIMEOUT_SECONDS = "1"
 
@@ -135,6 +140,16 @@ fun MacroEditorScreen(
     val testNoKeyMessage = stringResource(R.string.macro_editor_test_no_key)
     val fabBackdrop = rememberGlassFabBackdrop()
 
+    // Downloaded once per editor visit: the list can weigh hundreds of KB with its icons.
+    var cachedApps by remember { mutableStateOf<List<PcApp>?>(null) }
+    val noKeyForApps = stringResource(R.string.macro_editor_test_no_key)
+    val loadApps: suspend (Boolean) -> List<PcApp> = { forceRefresh ->
+        cachedApps?.takeIf { !forceRefresh } ?: run {
+            val encKey = pairingRepository.readEncKey(deviceId) ?: throw IllegalStateException(noKeyForApps)
+            PcAppListClient.fetch(context, deviceId, encKey).also { cachedApps = it }
+        }
+    }
+
     SubScreen(title = stringResource(R.string.macro_editor_title), onBack = onBack, fab = {
         GlassFab(
             onClick = { showAddDialog = true },
@@ -144,6 +159,12 @@ fun MacroEditorScreen(
         )
     }) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            Text(
+                stringResource(R.string.macro_timing_notice),
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary,
+            )
             if (steps.isEmpty()) {
                 Text(
                     stringResource(R.string.macro_editor_empty),
@@ -262,6 +283,7 @@ fun MacroEditorScreen(
 
     if (showAddDialog) {
         AddMacroStepDialog(
+            loadApps = loadApps,
             onDismiss = { showAddDialog = false },
             onAdd = { step ->
                 steps = steps + EditableStep(nextId++, step)
@@ -283,12 +305,13 @@ private fun MacroStepRow(
         MacroStepTypes.KEY_COMBO -> stringResource(R.string.macro_editor_step_summary_key_combo, step.keys.orEmpty().joinToString(" + "))
         MacroStepTypes.TIMEOUT -> stringResource(R.string.macro_editor_step_summary_timeout, formatSeconds(step.ms ?: 0))
         MacroStepTypes.TYPE_TEXT -> stringResource(R.string.macro_editor_step_summary_type_text, step.text.orEmpty())
+        MacroStepTypes.LAUNCH_APP -> stringResource(R.string.macro_editor_step_summary_launch_app, step.label ?: step.app.orEmpty())
         else -> step.type
     }
     GlassCard(modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             // Whole 48dp box is the grab area, not just the icon.
-            androidx.compose.foundation.layout.Box(handleModifier.size(48.dp), contentAlignment = Alignment.Center) {
+            Box(handleModifier.size(48.dp), contentAlignment = Alignment.Center) {
                 Icon(Icons.Filled.DragIndicator, contentDescription = stringResource(R.string.macro_editor_reorder), tint = TextSecondary)
             }
             Text(summary, style = MaterialTheme.typography.bodyLarge, color = TextPrimary, modifier = Modifier.weight(1f))
@@ -301,22 +324,30 @@ private fun MacroStepRow(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AddMacroStepDialog(onDismiss: () -> Unit, onAdd: (MacroStepDto) -> Unit) {
+private fun AddMacroStepDialog(
+    loadApps: suspend (Boolean) -> List<PcApp>,
+    onDismiss: () -> Unit,
+    onAdd: (MacroStepDto) -> Unit,
+) {
     var type by remember { mutableStateOf(MacroStepTypes.KEY_COMBO) }
     var selectedKeys by remember { mutableStateOf(emptySet<String>()) }
     var timeoutSeconds by remember { mutableStateOf(DEFAULT_TIMEOUT_SECONDS) }
     var typeText by remember { mutableStateOf("") }
+    var pickedApp by remember { mutableStateOf<PcApp?>(null) }
+    var showAppPicker by remember { mutableStateOf(false) }
 
     val typeOptions = listOf(
         MacroStepTypes.KEY_COMBO to stringResource(R.string.macro_editor_step_type_key_combo),
         MacroStepTypes.TIMEOUT to stringResource(R.string.macro_editor_step_type_timeout),
         MacroStepTypes.TYPE_TEXT to stringResource(R.string.macro_editor_step_type_type_text),
+        MacroStepTypes.LAUNCH_APP to stringResource(R.string.macro_editor_step_type_launch_app),
     )
 
     val canAdd = when (type) {
         MacroStepTypes.KEY_COMBO -> selectedKeys.isNotEmpty()
         MacroStepTypes.TIMEOUT -> parseSecondsToMs(timeoutSeconds) != null
         MacroStepTypes.TYPE_TEXT -> typeText.isNotEmpty() && typeText.all { it.code in 0x20..0x7E }
+        MacroStepTypes.LAUNCH_APP -> pickedApp != null
         else -> false
     }
 
@@ -377,6 +408,27 @@ private fun AddMacroStepDialog(onDismiss: () -> Unit, onAdd: (MacroStepDto) -> U
                             modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                         )
                     }
+                    MacroStepTypes.LAUNCH_APP -> {
+                        val app = pickedApp
+                        if (app != null) Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                        ) {
+                            AppIcon(app, Modifier.size(32.dp))
+                            Text(
+                                app.name,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = TextPrimary,
+                                modifier = Modifier.padding(start = 12.dp),
+                            )
+                        }
+                        PillButton(
+                            onClick = { showAppPicker = true },
+                            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                            tone = TextPrimary,
+                            text = stringResource(if (app == null) R.string.macro_editor_app_choose else R.string.macro_editor_app_change),
+                        )
+                    }
                 }
             }
         },
@@ -387,6 +439,7 @@ private fun AddMacroStepDialog(onDismiss: () -> Unit, onAdd: (MacroStepDto) -> U
                     val step = when (type) {
                         MacroStepTypes.KEY_COMBO -> MacroStepDto(type = type, keys = selectedKeys.toList())
                         MacroStepTypes.TIMEOUT -> MacroStepDto(type = type, ms = parseSecondsToMs(timeoutSeconds))
+                        MacroStepTypes.LAUNCH_APP -> MacroStepDto(type = type, app = pickedApp?.id, label = pickedApp?.name)
                         else -> MacroStepDto(type = type, text = typeText)
                     }
                     onAdd(step)
@@ -397,6 +450,14 @@ private fun AddMacroStepDialog(onDismiss: () -> Unit, onAdd: (MacroStepDto) -> U
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel), color = TextSecondary) }
         },
     )
+
+    if (showAppPicker) {
+        AppPickerDialog(
+            loadApps = loadApps,
+            onDismiss = { showAppPicker = false },
+            onPick = { pickedApp = it; showAppPicker = false },
+        )
+    }
 }
 
 @Composable
@@ -405,12 +466,23 @@ private fun KeyChipRow(keys: List<String>, selected: Set<String>, onToggle: (Str
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
     ) {
-        items(keys) { key ->
-            FilterChip(
-                selected = key in selected,
-                onClick = { onToggle(key, key !in selected) },
-                label = { Text(key) },
-            )
+        items(keys) { key -> KeyChip(key, selected = key in selected, onClick = { onToggle(key, key !in selected) }) }
+    }
+}
+
+/** A selectable key, colored like the step-type buttons above it: accent when selected, with
+ * no check mark (Material's FilterChip adds one, which only crowds these short labels). */
+@Composable
+private fun KeyChip(key: String, selected: Boolean, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.small,
+        color = if (selected) AccentDim else Color.Transparent,
+        border = BorderStroke(1.dp, if (selected) Accent else MaterialTheme.colorScheme.outline),
+        modifier = Modifier.height(32.dp),
+    ) {
+        Box(Modifier.padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
+            Text(key, style = MaterialTheme.typography.labelLarge, color = if (selected) Accent else TextPrimary)
         }
     }
 }

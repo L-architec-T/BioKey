@@ -15,6 +15,7 @@
 #include <unordered_map>
 #include <utility>
 
+#include "AppCatalog.h"
 #include "shell/Shell.h"
 #include "utils/StringUtils.h"
 
@@ -340,7 +341,10 @@ void RegisterMacroKeybits(int fd) {
     ioctl(fd, UI_SET_KEYBIT, keycodeAndShift.first);
 }
 
-int OpenUinputKeyboard() {
+constexpr auto GREETER_KEYBOARD_SETTLE = std::chrono::milliseconds(3000);
+constexpr auto MACRO_KEYBOARD_SETTLE = std::chrono::milliseconds(1000);
+
+int OpenUinputKeyboard(std::chrono::milliseconds settle) {
   int fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
   if(fd < 0) {
     spdlog::error("Failed to open /dev/uinput (errno={}).", errno);
@@ -360,7 +364,7 @@ int OpenUinputKeyboard() {
     close(fd);
     return -1;
   }
-  std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+  std::this_thread::sleep_for(settle);
   return fd;
 }
 
@@ -377,7 +381,7 @@ bool PlatformHelper::SelectGreeterUser(int userIndex) {
     return false;
   }
 
-  int fd = OpenUinputKeyboard();
+  int fd = OpenUinputKeyboard(GREETER_KEYBOARD_SETTLE);
   if(fd < 0)
     return false;
 
@@ -398,7 +402,30 @@ bool PlatformHelper::IsValidMacroKeyName(const std::string &keyName) {
   return KeyNameToKeycode().contains(keyName);
 }
 
-bool PlatformHelper::PlayMacro(const std::string &macroStepsJson) {
+namespace {
+// Runs in the user's own systemd manager, so the app gets their session's display, D-Bus and
+// environment instead of root's; doesn't wait for the app to exit.
+bool LaunchApp(const std::string &userName, const std::string &appId) {
+  auto desktopFile = AppCatalog::FindDesktopFile(userName, appId);
+  if(!desktopFile.has_value()) {
+    spdlog::warn("PlayMacro: application '{}' isn't installed for '{}'; skipping.", appId, userName);
+    return true;
+  }
+  if(desktopFile->string().find_first_of("\"$`\\") != std::string::npos) {
+    spdlog::error("PlayMacro: refusing to launch '{}' from an unusual path.", appId);
+    return false;
+  }
+  auto result = Shell::RunCommand(fmt::format(R"(systemd-run --user -M "{}@" --collect --quiet /usr/bin/gio launch "{}")", userName,
+                                              desktopFile->string()));
+  if(result.exitCode != 0) {
+    spdlog::error("PlayMacro: launching '{}' failed (code {}): {}", appId, result.exitCode, result.output);
+    return false;
+  }
+  return true;
+}
+}
+
+bool PlatformHelper::PlayMacro(const std::string &macroStepsJson, const std::string &userName, const std::function<void()> &waitUntilReady) {
   nlohmann::json macroJson;
   try {
     macroJson = nlohmann::json::parse(macroStepsJson);
@@ -411,9 +438,13 @@ bool PlatformHelper::PlayMacro(const std::string &macroStepsJson) {
     return false;
   }
 
-  int fd = OpenUinputKeyboard();
+  auto keyboardCreatedAt = std::chrono::steady_clock::now();
+  int fd = OpenUinputKeyboard(std::chrono::milliseconds(0));
   if(fd < 0)
     return false;
+  if(waitUntilReady)
+    waitUntilReady();
+  std::this_thread::sleep_until(keyboardCreatedAt + MACRO_KEYBOARD_SETTLE);
 
   auto ok = true;
   try {
@@ -436,6 +467,8 @@ bool PlatformHelper::PlayMacro(const std::string &macroStepsJson) {
           ok = TapCombo(fd, keycodes);
       } else if(type == "TIMEOUT") {
         std::this_thread::sleep_for(std::chrono::milliseconds(step.value("ms", 0)));
+      } else if(type == "LAUNCH_APP") {
+        ok = LaunchApp(userName, step.value("app", std::string()));
       } else if(type == "TYPE_TEXT") {
         for(char c : step.value("text", std::string())) {
           auto it = ActiveAsciiToKeycode().find(c);

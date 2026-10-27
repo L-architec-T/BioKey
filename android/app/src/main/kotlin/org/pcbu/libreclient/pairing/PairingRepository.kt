@@ -76,6 +76,11 @@ class PairingRepository(context: Context) {
         db.pairedDeviceDao().updateMacroSteps(deviceId, macroStepsJson)
     }
 
+    /** Blank [customName] goes back to the default name (the paired user). */
+    suspend fun updateCustomName(deviceId: String, customName: String?) = withContext(Dispatchers.IO) {
+        db.pairedDeviceDao().updateCustomName(deviceId, customName?.trim()?.takeIf { it.isNotEmpty() })
+    }
+
     /** Applies "Chiffrement biométrique" to the PCs already paired. Turning it on gates every
      * passwordKey now; turning it off can't decrypt them without a fingerprint, so each one is
      * stored plain again on its next unlock instead (see UnlockForegroundService). */

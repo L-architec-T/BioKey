@@ -17,6 +17,12 @@ object PacketIds {
      * listen port — not part of TCP framing, so this ID is only a documentation/
      * discriminator convention shared with Packets.h, not read off the wire. */
     const val LOCK_REQUEST: Int = 0xB3
+
+    /** pcbu-lockd -> phone, on the TCP connection the PC opens back after a "listApps"
+     * command: one header ([org.pcbu.libreclient.protocol.model.AppListHeader]), then the
+     * encrypted list split in chunks. */
+    const val APP_LIST_HEADER: Int = 0xC1
+    const val APP_LIST_CHUNK: Int = 0xC2
 }
 
 object ProtocolVersions {

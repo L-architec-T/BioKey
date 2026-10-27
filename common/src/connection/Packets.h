@@ -19,6 +19,11 @@ constexpr uint16_t PACKET_ID_UNLOCK_REQUEST = 0xB1;
 constexpr uint16_t PACKET_ID_UNLOCK_RESPONSE = 0xB2;
 constexpr uint16_t PACKET_ID_LOCK_REQUEST = 0xB3;
 
+// pcbu-lockd -> phone, on a TCP connection the PC opens back to the phone after a "listApps"
+// UDP command: one header ({"size", "chunks"}), then the AES packet of the list split in chunks.
+constexpr uint16_t PACKET_ID_APP_LIST_HEADER = 0xC1;
+constexpr uint16_t PACKET_ID_APP_LIST_CHUNK = 0xC2;
+
 struct PacketPairInit {
   std::string protoVersion{};
   std::string deviceUUID{};

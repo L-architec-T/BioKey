@@ -1,5 +1,19 @@
 package org.pcbu.libreclient.ui.devices
 
+import org.pcbu.libreclient.ui.theme.TextPrimary
+
+import org.pcbu.libreclient.ui.theme.Accent
+
+import androidx.compose.material3.TextField
+
+import org.pcbu.libreclient.storage.db.displayName
+
+import androidx.compose.ui.Alignment
+
+import androidx.compose.foundation.layout.Row
+
+import org.pcbu.libreclient.premium.PremiumStar
+
 import org.pcbu.libreclient.premium.PremiumFeature
 import org.pcbu.libreclient.premium.PremiumDialog
 import org.pcbu.libreclient.premium.PremiumAccess
@@ -51,11 +65,12 @@ fun DeviceDetailScreen(
     val context = LocalContext.current
     var status by remember { mutableStateOf("") }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showRename by remember { mutableStateOf(false) }
     val premium = remember { PremiumAccess.get(context) }
     val isPremium by premium.isPremium.collectAsState(initial = true)
     var showPremium by remember { mutableStateOf(false) }
 
-    SubScreen(title = device?.deviceName ?: "", onBack = onBack) { padding ->
+    SubScreen(title = device?.displayName ?: "", onBack = onBack) { padding ->
         val currentDevice = device
         if (currentDevice == null) {
             Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
@@ -81,6 +96,17 @@ fun DeviceDetailScreen(
                 stringResource(R.string.device_detail_os, currentDevice.deviceOS),
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary,
+            )
+            Text(
+                stringResource(R.string.device_detail_hostname, currentDevice.deviceName),
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextSecondary,
+            )
+            PillButton(
+                onClick = { showRename = true },
+                tone = TextPrimary,
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                text = stringResource(R.string.device_detail_rename),
             )
 
             val suspendSentMessage = stringResource(R.string.device_detail_suspend_sent)
@@ -113,11 +139,10 @@ fun DeviceDetailScreen(
                     runCatching { PcbuJson.decodeFromString(MacroDto.serializer(), it).steps.size }.getOrNull()
                 }
             }
-            Text(
-                stringResource(R.string.device_detail_macro_title),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(top = 24.dp),
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 24.dp)) {
+                Text(stringResource(R.string.device_detail_macro_title), style = MaterialTheme.typography.titleMedium)
+                PremiumStar()
+            }
             Text(
                 if (macroStepCount != null && macroStepCount > 0) {
                     stringResource(R.string.device_detail_macro_summary, macroStepCount)
@@ -127,7 +152,20 @@ fun DeviceDetailScreen(
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary,
             )
-            PillButton(
+            // deviceOS comes from the pairing response (AppInfo::GetOperatingSystem: "Linux",
+            // "Windows" or "macOS"); pcbu-lockd only plays macros on Linux.
+            val macrosSupported = currentDevice.deviceOS.equals("Linux", ignoreCase = true)
+            Text(
+                if (macrosSupported) {
+                    stringResource(R.string.macro_timing_notice)
+                } else {
+                    stringResource(R.string.macro_platform_notice, currentDevice.deviceOS)
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+            if (macrosSupported) PillButton(
                 onClick = { if (isPremium) onEditMacro() else showPremium = true },
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 text = stringResource(R.string.device_detail_macro_edit),
@@ -148,6 +186,42 @@ fun DeviceDetailScreen(
 
     if (showPremium) {
         PremiumDialog(PremiumFeature.MACROS, onDismiss = { showPremium = false }, onPurchased = onEditMacro)
+    }
+
+    val renamingDevice = device
+    if (showRename && renamingDevice != null) {
+        var name by remember { mutableStateOf(renamingDevice.customName.orEmpty()) }
+        GlassAlertDialog(
+            onDismissRequest = { showRename = false },
+            title = { Text(stringResource(R.string.device_detail_rename)) },
+            text = {
+                Column {
+                    TextField(
+                        value = name,
+                        onValueChange = { name = it.take(40) },
+                        singleLine = true,
+                        placeholder = { Text(renamingDevice.userName.ifBlank { renamingDevice.deviceName }) },
+                        label = { Text(stringResource(R.string.device_detail_rename_label)) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Text(
+                        stringResource(R.string.device_detail_rename_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showRename = false
+                    scope.launch { pairingRepository.updateCustomName(deviceId, name) }
+                }) { Text(stringResource(R.string.device_detail_rename_save), color = Accent) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRename = false }) { Text(stringResource(R.string.cancel), color = TextSecondary) }
+            },
+        )
     }
 
     if (showDeleteConfirm) {

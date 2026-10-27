@@ -10,6 +10,7 @@ import android.app.NotificationManager
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import org.pcbu.libreclient.premium.PremiumFeature
+import org.pcbu.libreclient.premium.PremiumStar
 import org.pcbu.libreclient.premium.PremiumDialog
 import org.pcbu.libreclient.premium.PremiumAccess
 import android.Manifest
@@ -148,7 +149,8 @@ fun SettingsScreen(preferencesStore: PreferencesStore, modifier: Modifier = Modi
             )
             SettingsSwitchRow(
                 title = stringResource(R.string.settings_lock_on_wifi_disconnect),
-                subtitle = premiumSubtitle(isPremium, stringResource(R.string.settings_lock_on_wifi_disconnect_desc)),
+                subtitle = stringResource(R.string.settings_lock_on_wifi_disconnect_desc),
+                premium = true,
                 checked = lockOnWifiDisconnect && isPremium,
                 onCheckedChange = {
                     if (!isPremium) premiumDialog = PremiumFeature.PROXIMITY_LOCK
@@ -157,7 +159,8 @@ fun SettingsScreen(preferencesStore: PreferencesStore, modifier: Modifier = Modi
             )
             SettingsSwitchRow(
                 title = stringResource(R.string.settings_lock_on_bluetooth),
-                subtitle = premiumSubtitle(isPremium, stringResource(R.string.settings_lock_on_bluetooth_desc)),
+                subtitle = stringResource(R.string.settings_lock_on_bluetooth_desc),
+                premium = true,
                 checked = lockOnBluetooth && isPremium,
                 onCheckedChange = { enabled ->
                     if (!isPremium) {
@@ -261,22 +264,23 @@ private fun PermissionHint(text: String, onAllow: () -> Unit) {
     }
 }
 
-private fun premiumSubtitle(isPremium: Boolean, description: String) =
-    if (isPremium) description else "Premium · $description"
-
 @Composable
 private fun SettingsSwitchRow(
     title: String,
     subtitle: String? = null,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
+    premium: Boolean = false,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge, color = TextPrimary)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(title, style = MaterialTheme.typography.bodyLarge, color = TextPrimary)
+                if (premium) PremiumStar()
+            }
             if (subtitle != null) {
                 Text(subtitle, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
             }

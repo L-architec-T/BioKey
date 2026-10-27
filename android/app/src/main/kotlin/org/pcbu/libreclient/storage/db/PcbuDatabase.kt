@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [PairedDeviceEntity::class], version = 2, exportSchema = true)
+@Database(entities = [PairedDeviceEntity::class], version = 3, exportSchema = true)
 abstract class PcbuDatabase : RoomDatabase() {
     abstract fun pairedDeviceDao(): PairedDeviceDao
 
@@ -23,10 +23,17 @@ abstract class PcbuDatabase : RoomDatabase() {
             }
         }
 
+        /** Adds the name chosen on the phone (null = default display name). */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE paired_devices ADD COLUMN customName TEXT")
+            }
+        }
+
         fun getInstance(context: Context): PcbuDatabase =
             instance ?: synchronized(this) {
                 instance ?: Room.databaseBuilder(context.applicationContext, PcbuDatabase::class.java, "pcbu.db")
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
                     .also { instance = it }
             }

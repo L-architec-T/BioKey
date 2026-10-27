@@ -63,6 +63,8 @@ elseif(UNIX)
             src/connection/unlock/servers/BTUnlockServer.cpp
             src/platform/PlatformHelper.Linux.cpp
             src/platform/BluetoothHelper.Linux.cpp
+            src/platform/AppCatalog.h
+            src/platform/AppCatalog.Linux.cpp
     )
 endif()
 

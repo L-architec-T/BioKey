@@ -44,4 +44,24 @@ class PcbuDatabaseMigrationTest {
             assertTrue(cursor.isNull(cursor.getColumnIndexOrThrow("macroStepsJson")))
         }
     }
+
+    @Test
+    fun `migrate 2 to 3 adds customName column and preserves existing rows`() {
+        helper.createDatabase(testDbName, 2).apply {
+            execSQL(
+                """INSERT INTO paired_devices
+                   (deviceId, deviceName, deviceOS, userName, unlockServerPort, macAddressesCsv, pairingMethod, pairedAtEpochMs, macroStepsJson)
+                   VALUES ('dev-1', 'debian', 'Linux', 'larchitect', 43296, 'aa:bb:cc:dd:ee:ff', 'UDP', 1700000000000, '{"steps":[]}')""",
+            )
+            close()
+        }
+
+        val migrated = helper.runMigrationsAndValidate(testDbName, 3, true, PcbuDatabase.MIGRATION_2_3)
+
+        migrated.query("SELECT macroStepsJson, customName FROM paired_devices WHERE deviceId = 'dev-1'").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("{\"steps\":[]}", cursor.getString(cursor.getColumnIndexOrThrow("macroStepsJson")))
+            assertTrue(cursor.isNull(cursor.getColumnIndexOrThrow("customName")))
+        }
+    }
 }

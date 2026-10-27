@@ -25,4 +25,12 @@ data class PairedDeviceEntity(
      * post-unlock macro is configured. Pushed to pcbu-lockd via LockBroadcastSender.sendMacro
      * on save; this column is the local copy used to repopulate the editor UI. */
     val macroStepsJson: String? = null,
+    /** Name chosen on the phone ("Renommer"); null keeps the default, see [displayName]. */
+    val customName: String? = null,
 )
+
+/** What the app calls this PC everywhere (lists, screens, notifications): the name chosen on
+ * the phone, else the paired OS user — [PairedDeviceEntity.deviceName] is only the PC's
+ * hostname at pairing time ("debian"), which says little and goes stale on a rename. */
+val PairedDeviceEntity.displayName: String
+    get() = customName?.takeIf { it.isNotBlank() } ?: userName.ifBlank { deviceName }

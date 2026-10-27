@@ -50,6 +50,11 @@ object LockBroadcastSender {
     fun sendRunMacro(context: Context, deviceId: String, encKey: String, macroJson: String) =
         sendCommand(context, deviceId, encKey, cmd = "runMacro", marker = macroJson)
 
+    /** Asks pcbu-lockd to connect back to this phone on [requestJson]'s port with the PC's
+     * application list (see [PcAppListClient]). */
+    fun sendListApps(context: Context, deviceId: String, encKey: String, requestJson: String) =
+        sendCommand(context, deviceId, encKey, cmd = "listApps", marker = requestJson)
+
     /** Asks pcbu-lockd to pre-select this device's paired OS user at the login greeter
      * (GDM/SDDM/etc., via a synthetic keypress) so its PAM conversation starts without a
      * physical click — see pcbu-lockd's HandleSelectUserCommand. The existing unlock flow

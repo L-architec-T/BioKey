@@ -74,6 +74,20 @@ CryptPacket CryptUtils::EncryptAESPacket(const std::vector<uint8_t> &data, const
   return {PacketCryptResult::OK, resultVec};
 }
 
+CryptPacket CryptUtils::EncryptAESPacketLarge(const std::vector<uint8_t> &data, const std::string &pwd) {
+  std::vector<uint8_t> plain(sizeof(int64_t) + data.size());
+  auto timeMs = htonll(Utils::GetCurrentTimeMs());
+  memcpy(plain.data(), &timeMs, sizeof(int64_t));
+  memcpy(&plain[sizeof(int64_t)], data.data(), data.size());
+
+  std::vector<uint8_t> enc(plain.size() + IV_SIZE + SALT_SIZE + GCM_TAG_SIZE);
+  auto encLen = EncryptAES(plain.data(), plain.size(), enc.data(), enc.size(), pwd.c_str());
+  if(encLen <= sizeof(int64_t))
+    return {PacketCryptResult::OTHER_ERROR};
+  enc.resize(encLen);
+  return {PacketCryptResult::OK, enc};
+}
+
 CryptPacket CryptUtils::DecryptAESPacket(const std::vector<uint8_t> &data, const std::string &pwd) {
   if(data.size() > CRYPT_BUFFER_SIZE)
     return {PacketCryptResult::OTHER_ERROR};

@@ -62,9 +62,11 @@ object AesGcmSimpleCodec {
         return iv + salt + ciphertextAndTag
     }
 
-    fun decrypt(blob: ByteArray, sharedKey: String): ByteArray {
+    /** [maxBlobSize] stays at the PC's CRYPT_BUFFER_SIZE except for replies the PC encrypts
+     * with EncryptAESPacketLarge (the macro editor's app list). */
+    fun decrypt(blob: ByteArray, sharedKey: String, maxBlobSize: Int = CryptoConstants.MAX_BLOB_SIZE): ByteArray {
         val overhead = CryptoConstants.IV_SIZE + CryptoConstants.SALT_SIZE + CryptoConstants.TAG_SIZE
-        if (blob.size > CryptoConstants.MAX_BLOB_SIZE) throw CryptoException.BlobTooLarge(blob.size)
+        if (blob.size > maxBlobSize) throw CryptoException.BlobTooLarge(blob.size)
         if (blob.size < overhead) throw CryptoException.BlobTooShort(blob.size)
 
         val iv = blob.copyOfRange(0, CryptoConstants.IV_SIZE)
@@ -104,8 +106,9 @@ object AesGcmPacketCodec {
         blob: ByteArray,
         sharedKey: String,
         nowMs: Long = System.currentTimeMillis(),
+        maxBlobSize: Int = CryptoConstants.MAX_BLOB_SIZE,
     ): ByteArray {
-        val decrypted = AesGcmSimpleCodec.decrypt(blob, sharedKey)
+        val decrypted = AesGcmSimpleCodec.decrypt(blob, sharedKey, maxBlobSize)
         if (decrypted.size < 8) throw CryptoException.BlobTooShort(decrypted.size)
 
         val timestampMs = ByteBuffer.wrap(decrypted, 0, 8).long

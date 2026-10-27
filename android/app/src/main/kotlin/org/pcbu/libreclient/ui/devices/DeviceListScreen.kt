@@ -1,5 +1,9 @@
 package org.pcbu.libreclient.ui.devices
 
+import org.pcbu.libreclient.storage.db.displayName
+
+import org.pcbu.libreclient.premium.PremiumStar
+
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -120,9 +124,13 @@ fun DeviceListScreen(
                     ) {
                         Icon(Icons.Outlined.Computer, contentDescription = null, tint = Accent)
                         Column(Modifier.weight(1f)) {
-                            Text(device.deviceName, style = MaterialTheme.typography.titleMedium, color = TextPrimary)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(device.displayName, style = MaterialTheme.typography.titleMedium, color = TextPrimary)
+                                // The free tier covers the first PC(s) paired; any beyond is Premium.
+                                if (devices.indexOf(device) >= PremiumAccess.FREE_DEVICE_LIMIT) PremiumStar()
+                            }
                             Text(
-                                "${device.userName} · ${device.deviceOS}",
+                                "${device.deviceName} · ${device.deviceOS}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = TextSecondary,
                             )

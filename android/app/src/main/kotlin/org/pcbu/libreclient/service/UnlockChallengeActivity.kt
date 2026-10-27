@@ -74,9 +74,11 @@ class UnlockChallengeActivity : FragmentActivity() {
         setContent {
             MaterialTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent) {
+                    // The PC's default name is its paired user: don't repeat it on a second line.
+                    val userLine = if (user.isBlank() || user == deviceName) "" else "\n$user"
                     Text(
-                        (if (program.isElevation) "$deviceName demande votre mot de passe\n$user" else null)
-                            ?: "Déverrouiller $deviceName ?\n$user",
+                        (if (program.isElevation) "$deviceName demande votre mot de passe$userLine" else null)
+                            ?: "Déverrouiller $deviceName ?$userLine",
                         modifier = Modifier.padding(24.dp),
                     )
                 }

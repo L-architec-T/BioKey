@@ -55,6 +55,7 @@ import org.pcbu.libreclient.storage.SecretsStore
 import org.pcbu.libreclient.storage.db.PairedDeviceEntity
 import org.pcbu.libreclient.storage.db.PcbuDatabase
 import org.pcbu.libreclient.ui.MainActivity
+import org.pcbu.libreclient.storage.db.displayName
 import org.pcbu.libreclient.unlock.AuthProgram
 import org.pcbu.libreclient.unlock.BlePresenceAdvertiser
 import org.pcbu.libreclient.unlock.BlePresenceBeacon
@@ -390,7 +391,7 @@ class UnlockForegroundService : Service() {
             if (!preferences.lockOnWifiDisconnectEnabled.first() || !premium.isPremium.first()) return@launch
             delay(preferences.lockTimeoutSeconds.first() * 1_000L)
             if (wifiConnected) return@launch
-            val names = db.pairedDeviceDao().getAll().joinToString(", ") { it.deviceName }
+            val names = db.pairedDeviceDao().getAll().joinToString(", ") { it.displayName }
             if (names.isEmpty()) return@launch
             val notification = Notification.Builder(this@UnlockForegroundService, CHALLENGE_CHANNEL_ID)
                 .setContentTitle("BioKey")
@@ -577,13 +578,13 @@ class UnlockForegroundService : Service() {
                 // Auto unlock skips the biometric prompt entirely (see shouldAutoUnlock below),
                 // so this is the only signal the user gets that their PC was just unlocked
                 // without their direct confirmation.
-                showAutoUnlockNotification(device.deviceName, AuthProgram.parse(challenge.program))
+                showAutoUnlockNotification(device.displayName, AuthProgram.parse(challenge.program))
                 true
             } else {
                 val requestId = UUID.randomUUID().toString()
                 val deferred = UnlockChallengeBridge.register(requestId)
                 val challengeIntent = UnlockChallengeActivity.intentFor(
-                    this@UnlockForegroundService, requestId, device.deviceId, device.deviceName, challenge.user, challenge.program,
+                    this@UnlockForegroundService, requestId, device.deviceId, device.displayName, challenge.user, challenge.program,
                 )
                 val notificationId = notificationIdCounter.incrementAndGet()
                 // Always route through the notification, never startActivity() directly: this
@@ -596,7 +597,7 @@ class UnlockForegroundService : Service() {
                 // keyguard state (same mechanism incoming-call UIs use); when the screen is
                 // already on it still shows immediately as a heads-up the user can tap.
                 showChallengeNotification(
-                    notificationId, challengeIntent, requestId, device.deviceName, AuthProgram.parse(challenge.program),
+                    notificationId, challengeIntent, requestId, device.displayName, AuthProgram.parse(challenge.program),
                     directUnlock = preferences.directUnlockEnabled.first(),
                     wearableNotification = !gated && preferences.wearableNotificationEnabled.first(),
                 )
@@ -618,7 +619,7 @@ class UnlockForegroundService : Service() {
                     if (gated && plainKey != null && !preferences.biometricEncryptionEnabled.first()) {
                         secrets.storePasswordKey(device.deviceId, plainKey, useBiometricGate = false)
                     }
-                    showUnlockSuccessNotification(device.deviceName, AuthProgram.parse(challenge.program))
+                    showUnlockSuccessNotification(device.displayName, AuthProgram.parse(challenge.program))
                 }
                 resolution is ChallengeResolution.Approved
             }
@@ -634,11 +635,11 @@ class UnlockForegroundService : Service() {
                         preferences.incrementUnlockSuccess()
                     } else {
                         Log.w(TAG, "no passwordKey stored for device ${device.deviceId}; responding APP_ERROR") // TEMP diagnostic (2026-08-22)
-                        showKeyUnavailableNotification(device.deviceName)
+                        showKeyUnavailableNotification(device.displayName)
                         it.respondError(UnlockErrors.APP_ERROR)
                     }
                 } else if (keyUnavailable) {
-                    showKeyUnavailableNotification(device.deviceName)
+                    showKeyUnavailableNotification(device.displayName)
                     it.respondError(UnlockErrors.APP_ERROR)
                 } else {
                     preferences.incrementUnlockDenied()

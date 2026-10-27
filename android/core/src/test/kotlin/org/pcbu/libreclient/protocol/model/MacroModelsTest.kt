@@ -33,12 +33,12 @@ class MacroModelsTest {
     }
 
     @Test
-    fun `MacroStepDto serializes exactly type, keys, ms, text`() {
+    fun `MacroStepDto serializes exactly type, keys, ms, text, app, label`() {
         val json = PcbuJson.encodeToString(
             MacroStepDto.serializer(),
             MacroStepDto(type = MacroStepTypes.TIMEOUT, ms = 500),
         )
-        assertEquals(setOf("type", "keys", "ms", "text"), keysOf(json))
+        assertEquals(setOf("type", "keys", "ms", "text", "app", "label"), keysOf(json))
     }
 
     @Test

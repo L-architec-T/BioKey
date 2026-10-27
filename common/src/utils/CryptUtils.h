@@ -20,6 +20,9 @@ public:
   static std::string Sha256(const std::string &text);
   static CryptPacket EncryptAESPacket(const std::vector<uint8_t> &data, const std::string &pwd);
   static CryptPacket DecryptAESPacket(const std::vector<uint8_t> &data, const std::string &pwd);
+  // Same format as EncryptAESPacket, without its 2 KB cap: for replies streamed in chunks
+  // (the macro editor's app list), encrypted once so the key is derived only once.
+  static CryptPacket EncryptAESPacketLarge(const std::vector<uint8_t> &data, const std::string &pwd);
 
   static std::optional<std::string> EncryptAES(const std::string &data, const std::string &pwd);
   static std::optional<std::string> DecryptAES(const std::string &data, const std::string &pwd);

@@ -1,13 +1,15 @@
-## BioKey 0.2.8
+## BioKey 0.2.9
+
+> Mettez à jour BioKey **sur le PC et sur le téléphone** : un PC resté en 0.2.8 verrouille la session au lieu d'envoyer la liste des applications.
+
+### Macros (PC sous Linux)
+- **Nouvelle étape « Appli »** : ouvre une application du PC. La liste des applications installées est récupérée depuis le PC, triée par ordre alphabétique, avec recherche et icônes (icône par défaut pour celles qui n'en ont pas).
+- **Lancement au bon moment** : la macro attend que le bureau soit prêt et que le PC ait fini de charger (20 s au plus) au lieu d'un délai fixe de 3 s.
+- **Jamais au réveil d'une veille** : déverrouiller le PC après une mise en veille ne lance plus la macro.
+- La macro ne se relance plus quand la session est déjà ouverte (passage en inactivité, etc.).
+- Pour un PC sous Windows ou macOS, la fiche indique que les macros ne sont pas disponibles.
 
 ### Téléphone (Android)
-- **Déverrouillage direct** : la demande d'empreinte peut s'afficher sans toucher la notification.
-  - Si Android bloque les notifications plein écran, les réglages le signalent avec un bouton **Autoriser** (écran éteint ou verrouillé).
-  - Nouvelle permission facultative « Superposition sur d'autres applis » : l'empreinte s'ouvre aussi pendant que vous utilisez le téléphone.
-- **Chiffrement biométrique** : le réglage s'applique maintenant aux PC déjà appairés, sans réappairage.
-  - Activé : la clé est chiffrée tout de suite.
-  - Désactivé : chaque PC repasse sans chiffrement à son prochain déverrouillage.
-  - L'empreinte reste demandée pour confirmer chaque déverrouillage, sauf avec le déverrouillage automatique.
-
-### PC
-- Après une mise à jour, BioKey redémarre bien tout seul et met à jour ses modules d'un coup, sans avoir à le rouvrir. Ce correctif agit à partir de la mise à jour suivante.
+- **Renommer un PC** depuis sa fiche. Par défaut, le PC porte maintenant le nom de l'utilisateur au lieu du nom réseau (par exemple « debian »), dans l'app comme dans les notifications.
+- **Étoile Premium** à côté des fonctions Premium : macros, verrouillage de proximité, PC supplémentaires.
+- Éditeur de macros : plus de coche sur les touches sélectionnées.
