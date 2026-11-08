@@ -20,6 +20,12 @@ data class MacroStepDto(
     val app: String? = null,
     /** LAUNCH_APP: the app's display name, for the editor only (pcbu-lockd ignores it). */
     val label: String? = null,
+    /** WAIT_PROC: text to look for in the command line of a newly started PC process. */
+    val match: String? = null,
+    /** WAIT_PROC: give up waiting after this many ms (then the macro carries on). */
+    val maxMs: Int? = null,
+    /** WAIT_PROC: extra pause once the process has appeared, for it to finish starting up. */
+    val settleMs: Int? = null,
 )
 
 @Serializable
@@ -34,6 +40,9 @@ object MacroStepTypes {
     const val TIMEOUT = "TIMEOUT"
     const val TYPE_TEXT = "TYPE_TEXT"
     const val LAUNCH_APP = "LAUNCH_APP"
+    /** Pause until a newly started process whose command line contains [MacroStepDto.match]
+     * shows up on the PC (bounded by [MacroStepDto.maxMs]). Edited from the "Pause" tab. */
+    const val WAIT_PROC = "WAIT_PROC"
 }
 
 /** Plaintext of the "listApps" command: where the phone waits for the PC's TCP connection,

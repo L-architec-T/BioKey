@@ -298,6 +298,36 @@ bool ValidateMacroSteps(const nlohmann::json &macroJson) {
           return false;
         }
       }
+    } else if(type == "WAIT_PROC") {
+      if(!step.contains("match") || !step["match"].is_string()) {
+        spdlog::warn("setMacro WAIT_PROC step needs a string 'match'.");
+        return false;
+      }
+      auto match = step["match"].get<std::string>();
+      if(match.empty() || match.size() > 64) {
+        spdlog::warn("setMacro WAIT_PROC step's 'match' must be 1 to 64 characters.");
+        return false;
+      }
+      for(auto c : match) {
+        auto uc = static_cast<unsigned char>(c);
+        if(uc < 0x20 || uc > 0x7E) {
+          spdlog::warn("setMacro WAIT_PROC step's 'match' contains a non-ASCII-printable character.");
+          return false;
+        }
+      }
+      for(const auto *field : {"maxMs", "settleMs"}) {
+        if(!step.contains(field) || step[field].is_null())
+          continue;
+        if(!step[field].is_number_integer()) {
+          spdlog::warn("setMacro WAIT_PROC step's '{}' must be an integer.", field);
+          return false;
+        }
+        auto ms = step[field].get<int64_t>();
+        if(ms < 0 || ms > 30'000) {
+          spdlog::warn("setMacro WAIT_PROC step's '{}' is out of the [0, 30000] range.", field);
+          return false;
+        }
+      }
     } else if(type == "LAUNCH_APP") {
       if(!step.contains("app") || !step["app"].is_string() || !AppCatalog::IsValidAppId(step["app"].get<std::string>())) {
         spdlog::warn("setMacro LAUNCH_APP step needs a valid desktop file name in 'app'.");

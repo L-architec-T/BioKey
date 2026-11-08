@@ -63,6 +63,12 @@
     <string name="macro_editor_step_summary_key_combo">Touches : %1$s</string>
     <string name="macro_editor_step_summary_timeout">Attendre %1$s s</string>
     <string name="macro_editor_step_summary_type_text">Taper : « %1$s »</string>
+    <string name="macro_editor_step_summary_wait_proc">Attendre « %1$s » (max %2$s s), puis %3$s s</string>
+    <string name="macro_editor_wait_program_toggle">Attendre qu\'un programme démarre</string>
+    <string name="macro_editor_wait_program_hint">La macro reprend dès que ce programme apparaît sur le PC, au plus tard après le délai maximal.</string>
+    <string name="macro_editor_wait_program_label">Nom du programme (ex. : claude)</string>
+    <string name="macro_editor_wait_max_label">Délai maximal (secondes, 30 max)</string>
+    <string name="macro_editor_wait_settle_label">Puis attendre (secondes)</string>
     <string name="macro_editor_timeout_label">Durée (secondes, 30 max)</string>
     <string name="macro_editor_text_label">Texte à taper (ASCII uniquement)</string>
     <string name="macro_editor_keys_label">Touches (au moins une)</string>

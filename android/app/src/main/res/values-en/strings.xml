@@ -109,6 +109,12 @@
     <string name="macro_editor_step_summary_key_combo">Keys: %1$s</string>
     <string name="macro_editor_step_summary_timeout">Wait %1$s s</string>
     <string name="macro_editor_step_summary_type_text">Type: “%1$s”</string>
+    <string name="macro_editor_step_summary_wait_proc">Wait for “%1$s” (max %2$s s), then %3$s s</string>
+    <string name="macro_editor_wait_program_toggle">Wait for a program to start</string>
+    <string name="macro_editor_wait_program_hint">The macro resumes as soon as this program shows up on the PC, or after the maximum delay at the latest.</string>
+    <string name="macro_editor_wait_program_label">Program name (e.g. claude)</string>
+    <string name="macro_editor_wait_max_label">Maximum delay (seconds, 30 max)</string>
+    <string name="macro_editor_wait_settle_label">Then wait (seconds)</string>
     <string name="macro_editor_timeout_label">Duration (seconds, 30 max)</string>
     <string name="macro_editor_text_label">Text to type (ASCII only)</string>
     <string name="macro_editor_keys_label">Keys (at least one)</string>

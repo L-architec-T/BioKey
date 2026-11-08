@@ -4,7 +4,13 @@
 #include <crypt.h>
 #include <cstring>
 #include <fcntl.h>
+#include <algorithm>
+#include <cstdlib>
+#include <dirent.h>
+#include <fstream>
+#include <iterator>
 #include <linux/uinput.h>
+#include <sys/stat.h>
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <pwd.h>
@@ -423,6 +429,35 @@ bool LaunchApp(const std::string &userName, const std::string &appId) {
   }
   return true;
 }
+
+// Counts the target user's processes whose /proc/<pid>/cmdline contains `needle`. Lets a WAIT_PROC
+// macro step wait for a program it just launched to actually come up, instead of sleeping a fixed
+// guess. Runs as root (in pcbu_lockd), so /proc is fully readable.
+int CountUserProcsMatching(uid_t uid, const std::string &needle) {
+  int count = 0;
+  DIR *proc = opendir("/proc");
+  if(proc == nullptr)
+    return 0;
+  for(struct dirent *entry = readdir(proc); entry != nullptr; entry = readdir(proc)) {
+    char *end{};
+    long pid = std::strtol(entry->d_name, &end, 10);
+    if(*end != '\0' || pid <= 0) // only numeric /proc entries are PIDs
+      continue;
+    auto dir = std::string("/proc/") + entry->d_name;
+    struct stat st{};
+    if(stat(dir.c_str(), &st) != 0 || st.st_uid != uid)
+      continue;
+    std::ifstream cmdline(dir + "/cmdline", std::ios::binary);
+    if(!cmdline.is_open())
+      continue;
+    std::string data((std::istreambuf_iterator<char>(cmdline)), std::istreambuf_iterator<char>());
+    std::replace(data.begin(), data.end(), '\0', ' '); // cmdline is NUL-separated
+    if(data.find(needle) != std::string::npos)
+      ++count;
+  }
+  closedir(proc);
+  return count;
+}
 }
 
 bool PlatformHelper::PlayMacro(const std::string &macroStepsJson, const std::string &userName, const std::function<void()> &waitUntilReady) {
@@ -436,6 +471,21 @@ bool PlatformHelper::PlayMacro(const std::string &macroStepsJson, const std::str
   if(!macroJson.contains("steps") || !macroJson["steps"].is_array()) {
     spdlog::error("PlayMacro: macro JSON has no 'steps' array.");
     return false;
+  }
+
+  // For WAIT_PROC steps: resolve the user's uid once, and snapshot — before the macro types
+  // anything — how many matching processes already run, so a step can tell an instance it just
+  // launched from one that was already running.
+  uid_t targetUid = static_cast<uid_t>(-1);
+  if(auto *pw = getpwnam(userName.c_str()))
+    targetUid = pw->pw_uid;
+  std::unordered_map<std::string, int> procBaseline{};
+  for(const auto &step : macroJson["steps"]) {
+    if(step.value("type", std::string()) == "WAIT_PROC") {
+      auto needle = step.contains("match") && step["match"].is_string() ? step["match"].get<std::string>() : std::string();
+      if(!needle.empty() && !procBaseline.contains(needle))
+        procBaseline[needle] = targetUid != static_cast<uid_t>(-1) ? CountUserProcsMatching(targetUid, needle) : 0;
+    }
   }
 
   auto keyboardCreatedAt = std::chrono::steady_clock::now();
@@ -467,6 +517,38 @@ bool PlatformHelper::PlayMacro(const std::string &macroStepsJson, const std::str
           ok = TapCombo(fd, keycodes);
       } else if(type == "TIMEOUT") {
         std::this_thread::sleep_for(std::chrono::milliseconds(step.value("ms", 0)));
+      } else if(type == "WAIT_PROC") {
+        // Adaptive wait: proceed as soon as a newly launched process matching `match` appears
+        // (count rises above the pre-macro baseline), then settle for `settleMs`. Bounded by
+        // `maxMs`, so a slow or missing launch degrades to the old fixed-sleep behaviour.
+        // The phone serializes unset fields as JSON null: treat null like a missing key.
+        auto intOr = [&step](const char *key, int fallback) {
+          return step.contains(key) && step[key].is_number_integer() ? step[key].get<int>() : fallback;
+        };
+        auto needle = step.contains("match") && step["match"].is_string() ? step["match"].get<std::string>() : std::string();
+        auto maxMs = std::clamp(intOr("maxMs", 15000), 0, 30000);
+        auto settleMs = std::clamp(intOr("settleMs", 0), 0, 30000);
+        auto pollMs = intOr("pollMs", 150);
+        if(pollMs < 20)
+          pollMs = 20;
+        auto baseline = procBaseline.contains(needle) ? procBaseline[needle] : 0;
+        auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(maxMs);
+        bool appeared = false;
+        if(!needle.empty() && targetUid != static_cast<uid_t>(-1)) {
+          while(std::chrono::steady_clock::now() < deadline) {
+            if(CountUserProcsMatching(targetUid, needle) > baseline) {
+              appeared = true;
+              break;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(pollMs));
+          }
+          if(!appeared)
+            spdlog::warn("PlayMacro: WAIT_PROC '{}' not seen within {}ms; continuing anyway.", needle, maxMs);
+        } else {
+          std::this_thread::sleep_until(deadline); // nothing to match: act as a plain bounded wait
+        }
+        if(appeared && settleMs > 0)
+          std::this_thread::sleep_for(std::chrono::milliseconds(settleMs));
       } else if(type == "LAUNCH_APP") {
         ok = LaunchApp(userName, step.value("app", std::string()));
       } else if(type == "TYPE_TEXT") {

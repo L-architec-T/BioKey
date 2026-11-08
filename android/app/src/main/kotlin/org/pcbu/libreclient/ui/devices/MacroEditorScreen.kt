@@ -30,6 +30,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextButton
@@ -82,6 +84,8 @@ import org.pcbu.libreclient.unlock.PcApp
 import org.pcbu.libreclient.unlock.PcAppListClient
 
 private const val DEFAULT_TIMEOUT_SECONDS = "1"
+private const val DEFAULT_WAIT_MAX_SECONDS = "12"
+private const val DEFAULT_WAIT_SETTLE_SECONDS = "2,5"
 
 /** A step plus a stable id, so reordering by drag keeps each row's identity (two identical
  * "ENTER" steps would otherwise share a key). */
@@ -306,6 +310,12 @@ private fun MacroStepRow(
         MacroStepTypes.TIMEOUT -> stringResource(R.string.macro_editor_step_summary_timeout, formatSeconds(step.ms ?: 0))
         MacroStepTypes.TYPE_TEXT -> stringResource(R.string.macro_editor_step_summary_type_text, step.text.orEmpty())
         MacroStepTypes.LAUNCH_APP -> stringResource(R.string.macro_editor_step_summary_launch_app, step.label ?: step.app.orEmpty())
+        MacroStepTypes.WAIT_PROC -> stringResource(
+            R.string.macro_editor_step_summary_wait_proc,
+            step.match.orEmpty(),
+            formatSeconds(step.maxMs ?: 15000),
+            formatSeconds(step.settleMs ?: 0),
+        )
         else -> step.type
     }
     GlassCard(modifier.fillMaxWidth()) {
@@ -332,6 +342,11 @@ private fun AddMacroStepDialog(
     var type by remember { mutableStateOf(MacroStepTypes.KEY_COMBO) }
     var selectedKeys by remember { mutableStateOf(emptySet<String>()) }
     var timeoutSeconds by remember { mutableStateOf(DEFAULT_TIMEOUT_SECONDS) }
+    // "Pause" tab: fixed duration, or wait for a program to start (WAIT_PROC).
+    var waitForProgram by remember { mutableStateOf(false) }
+    var waitMatch by remember { mutableStateOf("") }
+    var waitMaxSeconds by remember { mutableStateOf(DEFAULT_WAIT_MAX_SECONDS) }
+    var waitSettleSeconds by remember { mutableStateOf(DEFAULT_WAIT_SETTLE_SECONDS) }
     var typeText by remember { mutableStateOf("") }
     var pickedApp by remember { mutableStateOf<PcApp?>(null) }
     var showAppPicker by remember { mutableStateOf(false) }
@@ -345,7 +360,10 @@ private fun AddMacroStepDialog(
 
     val canAdd = when (type) {
         MacroStepTypes.KEY_COMBO -> selectedKeys.isNotEmpty()
-        MacroStepTypes.TIMEOUT -> parseSecondsToMs(timeoutSeconds) != null
+        MacroStepTypes.TIMEOUT -> if (waitForProgram) {
+            waitMatch.trim().length in 1..64 && waitMatch.trim().all { it.code in 0x20..0x7E } &&
+                parseSecondsToMs(waitMaxSeconds) != null && parseSecondsToMs(waitSettleSeconds) != null
+        } else parseSecondsToMs(timeoutSeconds) != null
         MacroStepTypes.TYPE_TEXT -> typeText.isNotEmpty() && typeText.all { it.code in 0x20..0x7E }
         MacroStepTypes.LAUNCH_APP -> pickedApp != null
         else -> false
@@ -392,7 +410,51 @@ private fun AddMacroStepDialog(
                         }
                     }
                     MacroStepTypes.TIMEOUT -> {
-                        TextField(
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                        ) {
+                            Text(
+                                stringResource(R.string.macro_editor_wait_program_toggle),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = TextPrimary,
+                                modifier = Modifier.weight(1f),
+                            )
+                            Switch(
+                                checked = waitForProgram,
+                                onCheckedChange = { waitForProgram = it },
+                                colors = SwitchDefaults.colors(checkedTrackColor = Accent),
+                            )
+                        }
+                        if (waitForProgram) {
+                            Text(
+                                stringResource(R.string.macro_editor_wait_program_hint),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary,
+                                modifier = Modifier.padding(top = 4.dp),
+                            )
+                            TextField(
+                                value = waitMatch,
+                                onValueChange = { waitMatch = it },
+                                label = { Text(stringResource(R.string.macro_editor_wait_program_label)) },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                            )
+                            TextField(
+                                value = waitMaxSeconds,
+                                onValueChange = { waitMaxSeconds = it },
+                                label = { Text(stringResource(R.string.macro_editor_wait_max_label)) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                            )
+                            TextField(
+                                value = waitSettleSeconds,
+                                onValueChange = { waitSettleSeconds = it },
+                                label = { Text(stringResource(R.string.macro_editor_wait_settle_label)) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                            )
+                        } else TextField(
                             value = timeoutSeconds,
                             onValueChange = { timeoutSeconds = it },
                             label = { Text(stringResource(R.string.macro_editor_timeout_label)) },
@@ -438,7 +500,12 @@ private fun AddMacroStepDialog(
                 onClick = {
                     val step = when (type) {
                         MacroStepTypes.KEY_COMBO -> MacroStepDto(type = type, keys = selectedKeys.toList())
-                        MacroStepTypes.TIMEOUT -> MacroStepDto(type = type, ms = parseSecondsToMs(timeoutSeconds))
+                        MacroStepTypes.TIMEOUT -> if (waitForProgram) MacroStepDto(
+                            type = MacroStepTypes.WAIT_PROC,
+                            match = waitMatch.trim(),
+                            maxMs = parseSecondsToMs(waitMaxSeconds),
+                            settleMs = parseSecondsToMs(waitSettleSeconds),
+                        ) else MacroStepDto(type = type, ms = parseSecondsToMs(timeoutSeconds))
                         MacroStepTypes.LAUNCH_APP -> MacroStepDto(type = type, app = pickedApp?.id, label = pickedApp?.name)
                         else -> MacroStepDto(type = type, text = typeText)
                     }

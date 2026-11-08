@@ -179,7 +179,9 @@ int OnInterfacesAdded(sd_bus_message *m, void *userdata, sd_bus_error *) {
   return 0;
 }
 
-bool StartLeDiscovery(sd_bus *bus) {
+// `logFailures` is false on the periodic retries, so a lasting Bluetooth outage (adapter powered
+// off, dongle unplugged, bluetoothd restarting) logs one line per episode instead of one every 10s.
+bool StartLeDiscovery(sd_bus *bus, bool logFailures) {
   sd_bus_message *m{};
   sd_bus_error err = SD_BUS_ERROR_NULL;
   int r = sd_bus_message_new_method_call(bus, &m, "org.bluez", ADAPTER_PATH, "org.bluez.Adapter1", "SetDiscoveryFilter");
@@ -189,14 +191,16 @@ bool StartLeDiscovery(sd_bus *bus) {
     r = sd_bus_call(bus, m, 0, &err, nullptr);
   sd_bus_message_unref(m);
   if(r < 0) {
-    spdlog::warn("BLE presence: SetDiscoveryFilter failed: {}", err.message ? err.message : strerror(-r));
+    if(logFailures)
+      spdlog::warn("BLE presence: SetDiscoveryFilter failed: {}", err.message ? err.message : strerror(-r));
     sd_bus_error_free(&err);
     return false;
   }
   r = sd_bus_call_method(bus, "org.bluez", ADAPTER_PATH, "org.bluez.Adapter1", "StartDiscovery", &err, nullptr, "");
   // InProgress just means our own earlier session is still running.
   if(r < 0 && !sd_bus_error_has_name(&err, "org.bluez.Error.InProgress")) {
-    spdlog::warn("BLE presence: StartDiscovery failed: {}", err.message ? err.message : strerror(-r));
+    if(logFailures)
+      spdlog::warn("BLE presence: StartDiscovery failed: {}", err.message ? err.message : strerror(-r));
     sd_bus_error_free(&err);
     return false;
   }
@@ -226,13 +230,17 @@ void BlePresenceWatcher::Run(const std::function<void(const Sighting &)> &onSigh
     ctx.onSighting = &onSighting;
     // Discovery started over this connection lasts as long as the connection itself does
     // (BlueZ stops a client's discovery when it leaves the bus), hence one long-lived bus.
-    if(sd_bus_open_system(&bus) >= 0 &&
+    bool started = sd_bus_open_system(&bus) >= 0 &&
        sd_bus_match_signal(bus, nullptr, "org.bluez", nullptr, "org.freedesktop.DBus.Properties", "PropertiesChanged",
                            OnPropertiesChanged, &ctx) >= 0 &&
        sd_bus_match_signal(bus, nullptr, "org.bluez", "/", "org.freedesktop.DBus.ObjectManager", "InterfacesAdded",
                            OnInterfacesAdded, &ctx) >= 0 &&
-       StartLeDiscovery(bus)) {
-      spdlog::info("BLE presence: scanning on {}.", ADAPTER_PATH);
+       StartLeDiscovery(bus, !loggedFailure); // only the first failure of an outage episode logs
+    if(started) {
+      if(loggedFailure)
+        spdlog::info("BLE presence: scanning resumed on {}.", ADAPTER_PATH);
+      else
+        spdlog::info("BLE presence: scanning on {}.", ADAPTER_PATH);
       loggedFailure = false;
       g_Scanning = true;
       auto lastCheck = std::chrono::steady_clock::now();
@@ -245,12 +253,12 @@ void BlePresenceWatcher::Run(const std::function<void(const Sighting &)> &onSigh
         // Discovery also stops when the adapter is powered off/on or bluetoothd restarts.
         if(std::chrono::steady_clock::now() - lastCheck > std::chrono::seconds(15)) {
           lastCheck = std::chrono::steady_clock::now();
-          if(!IsDiscovering(bus) && !StartLeDiscovery(bus))
+          if(!IsDiscovering(bus) && !StartLeDiscovery(bus, false))
             break;
         }
       }
       g_Scanning = false;
-      spdlog::warn("BLE presence: scanning stopped; retrying.");
+      spdlog::debug("BLE presence: scanning stopped; retrying.");
     } else if(!loggedFailure) {
       spdlog::warn("BLE presence: Bluetooth unavailable; retrying every 10s.");
       loggedFailure = true;
