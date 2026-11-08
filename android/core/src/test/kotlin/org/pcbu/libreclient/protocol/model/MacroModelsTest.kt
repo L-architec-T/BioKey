@@ -33,12 +33,15 @@ class MacroModelsTest {
     }
 
     @Test
-    fun `MacroStepDto serializes exactly type, keys, ms, text, app, label`() {
+    fun `MacroStepDto serializes exactly its contract fields`() {
         val json = PcbuJson.encodeToString(
             MacroStepDto.serializer(),
             MacroStepDto(type = MacroStepTypes.TIMEOUT, ms = 500),
         )
-        assertEquals(setOf("type", "keys", "ms", "text", "app", "label"), keysOf(json))
+        assertEquals(
+            setOf("type", "keys", "ms", "text", "app", "label", "match", "maxMs", "settleMs"),
+            keysOf(json),
+        )
     }
 
     @Test
