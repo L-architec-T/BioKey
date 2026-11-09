@@ -28,7 +28,8 @@ import java.util.concurrent.TimeUnit
  * Optional: DashboardAnalytics.screen("Accueil"), DashboardAnalytics.event("achat", mapOf("plan" to "pro")).
  *
  * Privacy: the only identifier is a random install UUID generated on first launch (never the
- * Android ID / advertising ID); the server stores only an HMAC of it. No IP is stored.
+ * Android ID / advertising ID), renewed every 13 months; the server stores only an HMAC of it.
+ * No IP is stored. Source of truth: android-foundation/legal/ — never edit a copy in an app.
  * Events are queued on disk and sent in batches over HTTPS, so offline use is not lost.
  */
 object DashboardAnalytics {
@@ -37,6 +38,7 @@ object DashboardAnalytics {
     private const val SESSION_TIMEOUT_MS = 30 * 60_000L
     private const val MAX_QUEUE = 500
     private const val BATCH = 50
+    private const val ID_MAX_AGE_MS = 395L * 24 * 3600_000L // 13 months
 
     private lateinit var prefs: SharedPreferences
     private lateinit var executor: ScheduledExecutorService
@@ -73,7 +75,10 @@ object DashboardAnalytics {
         executor.execute {
             restoreQueue()
             val existing = prefs.getString("install_id", null)
-            installId = existing ?: UUID.randomUUID().toString().also { prefs.edit().putString("install_id", it).apply() }
+            installId = existing ?: UUID.randomUUID().toString().also {
+                prefs.edit().putString("install_id", it).putLong("install_id_at", System.currentTimeMillis()).apply()
+            }
+            rotateInstallIdIfExpired()
             if (existing == null) {
                 // A fresh install (not just the first launch after adding the SDK to an old install).
                 val firstInstall = runCatching {
@@ -150,6 +155,22 @@ object DashboardAnalytics {
 
     private fun post(block: () -> Unit) {
         if (::executor.isInitialized) executor.execute(block)
+    }
+
+    /**
+     * CNIL audience-measurement exemption: the identifier must not live longer than 13 months and
+     * its lifetime is never extended by later use. Installs that predate this rule start counting
+     * from the first launch with this version.
+     */
+    private fun rotateInstallIdIfExpired() {
+        val now = System.currentTimeMillis()
+        val createdAt = prefs.getLong("install_id_at", 0L)
+        if (createdAt == 0L) {
+            prefs.edit().putLong("install_id_at", now).apply()
+        } else if (now - createdAt > ID_MAX_AGE_MS) {
+            installId = UUID.randomUUID().toString()
+            prefs.edit().putString("install_id", installId).putLong("install_id_at", now).apply()
+        }
     }
 
     private fun newSessionId(): String {

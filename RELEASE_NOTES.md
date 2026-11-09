@@ -1,9 +1,7 @@
-## BioKey 0.2.10
+## BioKey 0.2.11
 
-> Mettez à jour BioKey **sur le PC et sur le téléphone** : un PC resté en 0.2.9 refuse les macros qui contiennent la nouvelle attente de programme.
+### Téléphone
+- **Confidentialité et mentions légales** : nouvel écran dans le menu, qui explique ce que BioKey fait de vos données (vos empreintes et votre mot de passe ne quittent jamais le téléphone, sauf vers votre propre PC, chiffré), vos droits, et l'interrupteur des statistiques anonymes. Aussi consultable sur larchitect.cloud/legal/biokey.
+- L'identifiant des statistiques anonymes est désormais renouvelé automatiquement tous les 13 mois.
 
-### Macros (PC sous Linux)
-- **Attendre qu'un programme démarre** : dans l'étape « Pause », un interrupteur permet d'attendre qu'un programme apparaisse sur le PC (par exemple `claude`) au lieu d'une durée fixe. La macro reprend dès qu'il est lancé, avec un délai maximal et une courte pause de sécurité ensuite. Une macro qui prenait 25 s se joue maintenant en 7 à 9 s.
-
-### PC
-- Le Bluetooth indisponible (par exemple la nuit) n'inonde plus le journal d'un message toutes les 10 secondes : l'échec est noté une seule fois, puis la reprise du scan.
+Rien ne change côté PC : inutile de le mettre à jour.

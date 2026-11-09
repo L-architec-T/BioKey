@@ -4,6 +4,7 @@ import android.content.Intent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Policy
 import androidx.compose.material.icons.outlined.Computer
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Palette
@@ -14,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -59,6 +61,8 @@ fun HomeShell(
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var menuOpen by rememberSaveable { mutableStateOf(false) }
     var showAppearance by rememberSaveable { mutableStateOf(false) }
+    var showLegal by remember { mutableStateOf(false) }
+    if (showLegal) org.pcbu.libreclient.legal.LegalScreen(onClose = { showLegal = false })
     var showLanguage by rememberSaveable { mutableStateOf(false) }
 
     ScreenWallpaperBackdrop(modifier = Modifier.fillMaxSize()) {
@@ -92,6 +96,7 @@ fun HomeShell(
                         },
                         fullscreenMenuEntry(context),
                         org.pcbu.libreclient.analytics.analyticsMenuEntry(),
+                        MenuEntry(Icons.Outlined.Policy, org.pcbu.libreclient.legal.LEGAL_MENU_TITLE, org.pcbu.libreclient.legal.LEGAL_MENU_SUBTITLE) { showLegal = true },
                         persistentNotificationMenuEntry(context, org.pcbu.libreclient.service.UnlockForegroundService.CHANNEL_ID),
                     ),
                 )
